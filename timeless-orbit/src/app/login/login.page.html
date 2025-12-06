@@ -1,0 +1,19 @@
+<h1 class="game-title">TIMELESS ORBIT</h1>
+
+<div class="login-container">
+  <h2>Login</h2>
+  <form (ngSubmit)="checkLogin()">
+    <div class="form-row">
+      <label for="username">Username:</label>
+      <input type="text" id="username" [(ngModel)]="username" name="username" placeholder="Enter your username" />
+    </div>
+
+    <div class="form-row">
+      <label for="password">Password:</label>
+      <input type="password" id="password" [(ngModel)]="password" name="password" placeholder="Enter your password" />
+    </div>
+
+    <button type="submit">LOGIN</button>
+    <a href="#">Forgot password?</a>
+  </form>
+</div>

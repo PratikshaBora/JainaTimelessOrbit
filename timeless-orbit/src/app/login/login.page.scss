@@ -1,0 +1,85 @@
+body {
+  background: linear-gradient(to bottom, #0d0d0d, #1a1a1a);
+  font-family: 'Segoe UI', sans-serif;
+  color: white;
+  text-align: center;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+label {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.game-title {
+  font-size: 2.5rem;
+  margin-top: 40px;
+  margin-left: auto;
+  margin-right: auto;
+  color: white;
+  text-shadow: 0 0 10px #00f0ff;
+}
+
+.login-container {
+  margin: 105px auto;
+  padding: 30px;
+  width: 300px;
+  background-color: #222;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  background-color: #333;
+  border: 1px solid #444;
+  border-radius: 5px;
+  color: white;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  background-color: #00f0ff;
+  border: none;
+  border-radius: 5px;
+  color: black;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+a {
+  display: block;
+  margin-top: 10px;
+  color: #00f0ff;
+  text-decoration: underline;
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+label {
+  width: 100px;
+  font-weight: bold;
+  color: white;
+}
+
+input {
+  flex: 1;
+  padding: 8px;
+  background-color: #333;
+  border: 1px solid #444;
+  border-radius: 5px;
+  color: white;
+}
