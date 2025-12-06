@@ -1,27 +1,69 @@
-#container {
-  text-align: center;
-
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-#container strong {
-  font-size: 20px;
-  line-height: 26px;
-}
-
-#container p {
-  font-size: 16px;
-  line-height: 22px;
-
-  color: #8c8c8c;
-
+/* Full-page layout */
+body, html {
   margin: 0;
+  padding: 0;
+  height: 100%;
+  background: radial-gradient(circle at top, #0f0f0f, #1a1a1a); /* cosmic black gradient */
+  font-family: 'Segoe UI', sans-serif;
+  color: #fff;
 }
 
-#container a {
-  text-decoration: none;
+/* Title styling */
+.game-title {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-top: 2rem;
+  color: #00ffe0;
+  text-shadow: 0 0 10px #00ffe0;
+}
+
+/* Main container */
+.home-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: flex-start;
+  padding: 2rem;
+  height: calc(100% - 6rem); /* subtract title height */
+  box-sizing: border-box;
+}
+
+/* Card-style containers */
+.leaderboard-container,
+.game-container {
+  flex: 1;
+  margin: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 0 20px rgba(0, 255, 224, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+/* Leaderboard styling */
+.leaderboard-container h2 {
+  text-align: center;
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  color: #00ffe0;
+}
+
+.leaderboard-container ol {
+  padding-left: 1.5rem;
+  font-size: 1.2rem;
+  line-height: 2;
+}
+
+/* Game container styling */
+.game-container ion-button {
+  font-size: 1.3rem;
+  margin-bottom: 2rem;
+  --background: #00ffe0;
+  --color: #000;
+  box-shadow: 0 0 10px #00ffe0;
+}
+
+.player-position {
+  font-size: 1.3rem;
+  color: #ffffff;
 }
