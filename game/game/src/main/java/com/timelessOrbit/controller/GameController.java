@@ -1,0 +1,148 @@
+package com.timelessOrbit.controller;
+
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.stereotype.Controller;
+
+import com.timelessOrbit.gamestate.GameMove;
+import com.timelessOrbit.gamestate.GameRoom;
+import com.timelessOrbit.gamestate.GameState;
+import com.timelessOrbit.gamestate.GameUpdate;
+import com.timelessOrbit.gamestate.Player;
+import com.timelessOrbit.gamestate.GameEngine;
+import com.timelessOrbit.gamestate.Card;
+
+@Controller
+public class GameController {
+    private final GameState gameState = new GameState();
+
+    // --- Lobby ---
+    @MessageMapping("/join")
+    @SendTo("/topic/lobby")
+    public String join(Player player) {
+        gameState.addPlayer(player);
+        return "Player " + player.getUsername() + " joined!";
+    }
+
+    // --- Core gameplay ---
+    @MessageMapping("/playCard")
+    @SendTo("/topic/game")
+    public GameUpdate playCard(GameMove move) {
+        boolean success = gameState.playCard(move.getRoomId(), move.getPlayerId(), move.getCard());
+        Player winner = gameState.checkAndHandleGameOver(move.getRoomId());
+        return new GameUpdate(move.getRoomId(), success, winner);
+    }
+
+    @MessageMapping("/drawCard")
+    @SendTo("/topic/game")
+    public GameUpdate drawCard(GameMove move) {
+        GameRoom room = gameState.getGameRooms().get(move.getRoomId());
+        Player player = room.getPlayers().get(move.getPlayerId());
+
+        drawCards(player, room, 1);
+        return new GameUpdate(move.getRoomId(), true, null);
+    }
+
+    // --- New actions ---
+    @MessageMapping("/pickDiscard")
+    @SendTo("/topic/game")
+    public GameUpdate pickDiscard(GameMove move) {
+        GameRoom room = gameState.getGameRooms().get(move.getRoomId());
+        Player player = room.getPlayers().get(move.getPlayerId());
+        GameEngine engine = new GameEngine(room);
+
+        if (!room.discardPile.isEmpty()) {
+            Card card = room.discardPile.remove(room.discardPile.size() - 1);
+
+            boolean success;
+            if (engine.isValidMove(card, room.getTopDiscard())) {
+                success = room.playCard(player, card);
+            } else {
+                // Just add to hand; success = false because the card couldn't be played
+                player.getHand().add(card);
+                success = false;
+            }
+
+            return new GameUpdate(move.getRoomId(), success, null);
+        }
+        return new GameUpdate(move.getRoomId(), false, null);
+    }
+
+    @MessageMapping("/jaiJinendra")
+    @SendTo("/topic/game")
+    public GameUpdate jaiJinendra(GameMove move) {
+        GameRoom room = gameState.getGameRooms().get(move.getRoomId());
+        Player player = room.getPlayers().get(move.getPlayerId());
+        GameEngine engine = new GameEngine(room);
+
+        // Mark declaration to avoid auto-penalty in GameEngine
+        player.changeSaidJaiJinendra(true);
+
+        if (player.getHand().size() == 1) {
+            Card lastCard = player.getHand().get(0);
+            boolean canPlay = engine.isValidMove(lastCard, room.getTopDiscard());
+            if (canPlay) {
+                boolean success = gameState.playCard(move.getRoomId(), move.getPlayerId(), lastCard);
+                Player winner = gameState.checkAndHandleGameOver(move.getRoomId());
+                return new GameUpdate(move.getRoomId(), success, winner);
+            } else {
+                // Penalty: draw 1
+                drawCards(player, room, 1);
+                return new GameUpdate(move.getRoomId(), false, null);
+            }
+        }
+        return new GameUpdate(move.getRoomId(), false, null);
+    }
+
+
+    @MessageMapping("/penaltyDraw")
+    @SendTo("/topic/game")
+    public GameUpdate penaltyDraw(GameMove move) {
+        GameRoom room = gameState.getGameRooms().get(move.getRoomId());
+        Player player = room.getPlayers().get(move.getPlayerId());
+        drawCards(player, room, 1);
+        return new GameUpdate(move.getRoomId(), true, null);
+    }
+
+    @MessageMapping("/jjPenalty")
+    @SendTo("/topic/game")
+    public GameUpdate jjPenalty(GameMove move) {
+        GameRoom room = gameState.getGameRooms().get(move.getRoomId());
+        Player player = room.getPlayers().get(move.getPlayerId());
+        drawCards(player, room, 1);
+        return new GameUpdate(move.getRoomId(), true, null);
+    }
+
+    @MessageMapping("/endgame")
+    @SendTo("/topic/game")
+    public GameUpdate endgame(GameMove move) {
+        GameRoom room = gameState.getGameRooms().get(move.getRoomId());
+        Player winner = gameState.resolveEndgame(room);
+        return new GameUpdate(move.getRoomId(), true, winner);
+    }
+
+    @MessageMapping("/drawTwo")
+    @SendTo("/topic/game")
+    public GameUpdate drawTwo(GameMove move) {
+        GameRoom room = gameState.getGameRooms().get(move.getRoomId());
+        Player player = room.getPlayers().get(move.getPlayerId());
+        drawCards(player, room, 2);
+        return new GameUpdate(move.getRoomId(), true, null);
+    }
+
+    @MessageMapping("/drawFour")
+    @SendTo("/topic/game")
+    public GameUpdate drawFour(GameMove move) {
+        GameRoom room = gameState.getGameRooms().get(move.getRoomId());
+        Player player = room.getPlayers().get(move.getPlayerId());
+        drawCards(player, room, 4);
+        return new GameUpdate(move.getRoomId(), true, null);
+    }
+
+    // Utility
+    public void drawCards(Player player, GameRoom room, int count) {
+        for (int i = 0; i < count && !room.drawPile.isEmpty(); i++) {
+            player.getHand().add(room.drawPile.remove(0));
+        }
+    }
+}

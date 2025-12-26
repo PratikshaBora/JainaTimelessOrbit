@@ -1,0 +1,33 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>lobby</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">lobby</ion-title>
+    </ion-toolbar>
+  </ion-header>
+</ion-content>
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Game Lobby</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <h2>Waiting for players...</h2>
+  <p>Time left: {{ timeLeft }} seconds</p>
+
+  <ion-list>
+    <ion-item *ngFor="let player of players">
+      {{ player }}
+    </ion-item>
+  </ion-list>
+
+  <ion-button expand="block" color="primary" (click)="leaveLobby()">
+    Leave Lobby
+  </ion-button>
+</ion-content>

@@ -1,3 +1,4 @@
+import { Router } from '@angular/router';
 import { Component } from '@angular/core';
 
 @Component({
@@ -7,8 +8,13 @@ import { Component } from '@angular/core';
   standalone: false,
 })
 export class HomePage {
+  currentPosition = 'Not Started';
 
-  constructor() {}
+  constructor(private router: Router) {}
 
-  currentPosition = 3;
+  startGame() {
+    this.currentPosition = 'Waiting in Lobby';
+    this.router.navigate(['/lobby']);  // Navigate to lobby page
+  }
+
 }

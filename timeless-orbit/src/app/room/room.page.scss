@@ -1,0 +1,142 @@
+/* General layout */
+ion-content {
+  background: #f9f9f9;
+}
+
+/* Status banner */
+.status-banner {
+  text-align: center;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 6px;
+  background-color: #eee;
+  font-weight: bold;
+}
+
+.status-banner.active {
+  background-color: #d1ffd1;
+  color: #006400;
+}
+
+/* Players list */
+ion-item.active-player {
+  border-left: 4px solid #3880ff; /* Ionic primary color */
+  background-color: #f0f8ff;
+}
+
+ion-badge {
+  margin-left: auto;
+}
+
+/* Board sections */
+.board-section {
+  margin: 20px 0;
+}
+
+.board-section h2 {
+  margin-bottom: 10px;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+/* Discard pile card */
+ion-card.clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+ion-card.clickable:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Player hand */
+.player-hand {
+  margin: 20px 0;
+}
+
+.player-hand ion-card {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.player-hand ion-card.selected {
+  border: 2px solid #3880ff;
+  transform: scale(1.05);
+}
+
+.player-hand ion-card:hover {
+  transform: scale(1.03);
+}
+
+/* Game actions */
+.game-actions {
+  margin-top: 20px;
+}
+
+.game-actions ion-button {
+  margin-bottom: 10px;
+}
+
+/* ---------------- DARK MODE ---------------- */
+@media (prefers-color-scheme: dark) {
+  ion-content {
+    background: #121212;
+    color: #e0e0e0;
+  }
+
+  .status-banner {
+    background-color: #333;
+    color: #e0e0e0;
+  }
+
+  .status-banner.active {
+    background-color: #004d00;
+    color: #b2ffb2;
+  }
+
+  ion-item.active-player {
+    border-left: 4px solid #66b2ff;
+    background-color: #1e1e1e;
+  }
+
+  ion-card.clickable:hover {
+    box-shadow: 0 4px 12px rgba(255,255,255,0.2);
+  }
+
+  .player-hand ion-card.selected {
+    border: 2px solid #66b2ff;
+  }
+
+  /* Timer overrides */
+  .timer-bar {
+    background-color: #333;
+  }
+
+  .timer-fill {
+    background-color: #66b2ff;
+  }
+
+  .timer-fill.jj {
+    background-color: #ffb84d;
+  }
+}
+/* Timer progress bars */
+.timer-bar {
+  height: 8px;
+  border-radius: 4px;
+  margin-top: 5px;
+  background-color: #ddd;
+  overflow: hidden;
+}
+
+.timer-fill {
+  height: 100%;
+  background-color: #3880ff; /* Ionic primary color */
+  transition: width 1s linear;
+}
+
+.timer-fill.jj {
+  background-color: orange;
+}
+
