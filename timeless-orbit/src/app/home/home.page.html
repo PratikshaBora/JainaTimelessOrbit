@@ -1,23 +1,19 @@
 <h1 class="game-title">TIMELESS ORBIT</h1>
 
 <div class="home-container">
-
-  <!-- 🏆 Leaderboard Container -->
+  <!-- 🏆 Leaderboard -->
   <div class="leaderboard-container">
     <h2>Leaderboard</h2>
     <ol>
-      <li>Player 1 - 1200 pts</li>
-      <li>Player 2 - 1100 pts</li>
-      <li>Player 3 - 950 pts</li>
-      <li>Player 4 - 900 pts</li>
-      <li>Player 5 - 850 pts</li>
+      <li *ngFor="let player of leaderboard">
+        {{ player.username }} - {{ player.score || 0 }} points
+      </li>
     </ol>
   </div>
 
-  <!-- 🎮 Game Start Container -->
+  <!-- 🎮 Game Start -->
   <div class="game-container">
-    <ion-button expand="block" size="large" color="primary"
-      (click)="startGame()">
+    <ion-button expand="block" size="large" color="primary" (click)="startGame()">
       Start Game
     </ion-button>
 
@@ -25,5 +21,4 @@
       Current Position: <strong>{{ currentPosition }}</strong>
     </p>
   </div>
-
 </div>

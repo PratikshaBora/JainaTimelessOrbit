@@ -9,9 +9,14 @@ import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
 import { LobbyPage } from './lobby/lobby.page';
 import { FormsModule } from '@angular/forms';
+import { ScoreboardComponent } from './scoreboard/scoreboard.component';
+
 
 @NgModule({
-  declarations: [AppComponent],
+  declarations: [
+                  AppComponent,
+                  ScoreboardComponent
+                ],
   imports: [
     BrowserModule,
     IonicModule.forRoot(),

@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
-import { Socket } from 'ngx-socket-io'; // assuming ngx-socket-io
-import { WebsocketService } from '../services/websocket';
+import { WebsocketService } from '../services/websocket.service';
+import { MessagePayload } from '../models/message-payload';
 
 @Component({
   selector: 'app-lobby',
@@ -9,27 +9,25 @@ import { WebsocketService } from '../services/websocket';
   styleUrls: ['./lobby.page.scss'],
   standalone: false
 })
-export class LobbyPage implements OnInit {
+export class LobbyPage implements OnInit, OnDestroy {
 
-  players: string[] = [];
-  timeLeft: number = 120; // 2 minutes
+  players: MessagePayload[] = [];
+  timeLeft: number = 120;
   interval: any;
 
-  constructor(private router: Router, private wsService: WebsocketService) { }
+  constructor(
+    private router: Router,
+    private wsService: WebsocketService
+  ) {}
 
   ngOnInit() {
-    this.wsService.connect(()=>{
-      console.log('callback');
-      this.wsService.joinLobby('Pratiksha');
-    });
-    console.log('ngOnInit');
+    this.wsService.connect();
+    this.wsService.joinLobby('Pratiksha');
 
-    // Subscribe to player updates
-    this.wsService.players$.subscribe(players => {
+    this.wsService.players$.subscribe((players: MessagePayload[]) => {
       this.players = players;
     });
 
-    // Start countdown
     this.interval = setInterval(() => {
       this.timeLeft--;
       if (this.timeLeft <= 0) {
@@ -37,8 +35,8 @@ export class LobbyPage implements OnInit {
         this.createRoom();
       }
     }, 1000);
-
   }
+
   leaveLobby() {
     clearInterval(this.interval);
     this.wsService.disconnect();
@@ -54,5 +52,4 @@ export class LobbyPage implements OnInit {
     clearInterval(this.interval);
     this.wsService.disconnect();
   }
-
 }

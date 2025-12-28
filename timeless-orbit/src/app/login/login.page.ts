@@ -1,7 +1,9 @@
 import { Router } from '@angular/router';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { WebsocketService } from '../services/websocket';
+import { WebsocketService } from '../services/websocket.service';
+import { PlayerService } from '../services/player.service';
+import { MessagePayload } from '../models/message-payload';
 
 @Component({
   selector: 'app-login',
@@ -11,13 +13,14 @@ import { WebsocketService } from '../services/websocket';
 })
 export class LoginPage implements OnInit {
 
-  username: string='';
-  password: string='';
   loginForm!: FormGroup;
+  currentUser!: MessagePayload;
 
   constructor(
     private formBuilder: FormBuilder,
-    private router: Router
+    private router: Router,
+    private websocketService: WebsocketService,
+    private playerService: PlayerService
   ) {}
 
   ngOnInit() {
@@ -30,18 +33,35 @@ export class LoginPage implements OnInit {
   onLogin() {
     if (this.loginForm.valid) {
       const { username, password } = this.loginForm.value;
-      console.log('Login attempt:', username, password);
-      // TODO: Hook into authentication service
-    }
-  }
 
-  checkLogin() {
-    if (this.username === 'pratiksha' && this.password === '1234') {
-      alert('Login successful! 🎉');
+      // Use PlayerService to add or get player
+      this.currentUser = this.playerService.addOrGetPlayer(username, password);
+
+      alert(`Welcome ${username}! 🎉`);
       this.router.navigate(['/home']);
+
+      // Notify backend via WebSocket (avoid sending password ideally)
+      this.websocketService.sendMessage({
+        type: 'LOGIN',
+        payload: { username }
+      });
     } else {
-      alert('Invalid username or password ❌');
+      alert('Please enter valid credentials ❌');
     }
   }
 
+  // Delegate score update to PlayerService
+  updateScore(username: string, points: number) {
+    this.playerService.updateScore(username, points);
+
+    this.websocketService.sendMessage({
+      type: 'UPDATE_SCORE',
+      payload: { username, score: points }
+    });
+  }
+
+  // Delegate leaderboard to PlayerService
+  getLeaderboard(): MessagePayload[] {
+    return this.playerService.getLeaderboard();
+  }
 }

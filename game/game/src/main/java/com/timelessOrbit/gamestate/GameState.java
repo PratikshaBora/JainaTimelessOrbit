@@ -8,6 +8,8 @@ public class GameState {
 	List<Player> waitingPlayers = new ArrayList<Player>();
 	List<GameRoom> gameRooms = new ArrayList<GameRoom>();
 	
+	private List<PlayerScore> pastScores = new ArrayList<>();
+	
 	long firstPlayerJoinTime = 0;
 	
 	//When a player joins, they go into waitingPlayers.
@@ -96,10 +98,34 @@ public class GameState {
 	    return winner;
 	}
 	
-	private void endRoom(int roomId) {
+	public List<PlayerScore> endRoom(int roomId) {
 	    GameRoom room = gameRooms.get(roomId);
+	    List<PlayerScore> scores = new ArrayList<>();
+
+	    if (room != null) {
+	        for (Player p : room.getPlayers()) {
+	            int points = room.calculatePoints(p);
+	            PlayerScore score = new PlayerScore(
+	                p.getId(),
+	                p.getUsername(),
+	                points,
+	                roomId
+	            );
+	            pastScores.add(score);
+	            scores.add(score); // return snapshot for broadcast
+	        }
+	        System.out.println("Room " + roomId + " ended. Scores saved.");
+	    }
 	    gameRooms.set(roomId, null); // mark as ended
+	    return scores;
 	}
+
+
+	// Access past scores
+	public List<PlayerScore> getPastScores() {
+	    return new ArrayList<>(pastScores);
+	}
+
 	
 	public boolean playCard(int roomId, int playerId, Card card) {
 	    GameRoom room = gameRooms.get(roomId);
@@ -204,5 +230,34 @@ public class GameState {
     public GameRoom getRoom(int roomId) {
         return gameRooms.get(roomId);
     }
+
+ // Remove player by ID (from lobby or from any room)
+    public String removePlayer(int id) {
+        // First check waitingPlayers (lobby)
+        for (Player p : waitingPlayers) {
+            if (p.getId() == id) {
+                waitingPlayers.remove(p);
+                return p.getUsername() + " left the lobby.";
+            }
+        }
+
+        // Then check active rooms
+        for (GameRoom room : gameRooms) {
+            if (room != null) {
+                String result = room.removePlayer(id);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+
+        return "❌ Player with id " + id + " not found.";
+    }
+
+
+	// Return all players currently waiting in lobby
+	public List<Player> getPlayers() {
+	    return new ArrayList<>(waitingPlayers);
+	}
 
 }

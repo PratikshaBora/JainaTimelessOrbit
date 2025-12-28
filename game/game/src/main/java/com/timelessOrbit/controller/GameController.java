@@ -1,28 +1,50 @@
 package com.timelessOrbit.controller;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 import com.timelessOrbit.gamestate.GameMove;
 import com.timelessOrbit.gamestate.GameRoom;
 import com.timelessOrbit.gamestate.GameState;
 import com.timelessOrbit.gamestate.GameUpdate;
 import com.timelessOrbit.gamestate.Player;
+import com.timelessOrbit.gamestate.PlayerScore;
 import com.timelessOrbit.gamestate.GameEngine;
 import com.timelessOrbit.gamestate.Card;
 
 @Controller
+@CrossOrigin(origins = "http://localhost:8100",allowCredentials = "true")
 public class GameController {
     private final GameState gameState = new GameState();
 
-    // --- Lobby ---
+    // --- Lobby Management ---
     @MessageMapping("/join")
     @SendTo("/topic/lobby")
     public String join(Player player) {
         gameState.addPlayer(player);
         return "Player " + player.getUsername() + " joined!";
     }
+    
+    @MessageMapping("/leaveLobby")
+    @SendTo("/topic/lobby")
+    public List<Player> leaveLobby(Player player) {
+        gameState.removePlayer(player.getId());
+        return new ArrayList<>(gameState.getPlayers());
+    }
+
+    @MessageMapping("/lobbyStatus")
+    @SendTo("/topic/lobby")
+    public List<Player> lobbyStatus() {
+        return new ArrayList<>(gameState.getPlayers());
+    }
+
 
     // --- Core gameplay ---
     @MessageMapping("/playCard")
@@ -113,11 +135,21 @@ public class GameController {
         return new GameUpdate(move.getRoomId(), true, null);
     }
 
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
     @MessageMapping("/endgame")
     @SendTo("/topic/game")
     public GameUpdate endgame(GameMove move) {
         GameRoom room = gameState.getGameRooms().get(move.getRoomId());
         Player winner = gameState.resolveEndgame(room);
+
+        // ✅ Let GameState handle score calculation
+        List<PlayerScore> scores = gameState.endRoom(move.getRoomId());
+
+        // ✅ Controller only broadcasts
+        messagingTemplate.convertAndSend("/topic/scoreboard", scores);
+
         return new GameUpdate(move.getRoomId(), true, winner);
     }
 

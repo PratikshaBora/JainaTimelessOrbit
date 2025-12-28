@@ -2,16 +2,22 @@ import { Injectable } from '@angular/core';
 import { Client, IMessage } from '@stomp/stompjs';
 import * as SockJS from 'sockjs-client';
 import { BehaviorSubject } from 'rxjs';
+import { MessagePayload } from '../models/message-payload';
+import { PlayerService } from './player.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class WebsocketService {
   private stompClient!: Client;
-  private playersSubject = new BehaviorSubject<string[]>([]);
+  private playersSubject = new BehaviorSubject<MessagePayload[]>([]);
   players$ = this.playersSubject.asObservable();
+  private scoreboardSubject = new BehaviorSubject<any[]>([]);
+  scoreboard$ = this.scoreboardSubject.asObservable();
 
-  connect(callback: Function|null=null) {
+  constructor(private playerService: PlayerService) {}
+
+  connect(callback: Function | null = null) {
     this.stompClient = new Client({
       webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
       reconnectDelay: 5000,
@@ -23,22 +29,48 @@ export class WebsocketService {
 
       // Subscribe to lobby updates
       this.stompClient.subscribe('/topic/lobby', (message: IMessage) => {
-        const playerName = JSON.parse(message.body).username;
+        const backendPlayer = JSON.parse(message.body);
+
+        // Map backend Player → frontend MessagePayload
+        const player: MessagePayload = {
+          username: backendPlayer.username,
+          score: backendPlayer.points,   // ✅ map points → score
+          roomId: backendPlayer.roomId,
+          playerId: backendPlayer.id
+        };
+
         const currentPlayers = this.playersSubject.value;
-        if (!currentPlayers.includes(playerName)) {
-          this.playersSubject.next([...currentPlayers, playerName]);
+        if (!currentPlayers.find(p => p.username === player.username)) {
+          this.playersSubject.next([...currentPlayers, player]);
         }
+
+        // Sync with PlayerService using latest subject value
+        this.playerService.setPlayersFromServer(this.playersSubject.value);
+      });
+
+      // Subscribe to score updates
+      this.stompClient.subscribe('/topic/score', (message: IMessage) => {
+        const payload: MessagePayload = JSON.parse(message.body);
+        this.playerService.updateScore(payload.username, payload.score ?? 0);
       });
 
       // Subscribe to game updates
       this.stompClient.subscribe('/topic/game', (message: IMessage) => {
         console.log('Game update:', JSON.parse(message.body));
       });
+
+      // Subscribe to scoreboard updates
+      this.stompClient.subscribe('/topic/scoreboard', (message: IMessage) => {
+        const scores = JSON.parse(message.body); // this will be a list of PlayerScore objects
+        console.log('Scoreboard update:', scores);
+
+        // Push into BehaviorSubject so components can react
+        this.scoreboardSubject.next(scores);
+      });
     };
 
     this.stompClient.activate();
-    if(callback)
-    {
+    if (callback) {
       callback();
     }
   }
@@ -54,11 +86,24 @@ export class WebsocketService {
     if (this.stompClient && this.stompClient.connected) {
       this.stompClient.publish({
         destination: '/joinLobby',
-        body: JSON.stringify({ username, password: '' }),
+        body: JSON.stringify({ username }),
       });
     }
   }
 
+  createRoom(players: MessagePayload[]) {
+    if (this.stompClient && this.stompClient.connected) {
+      this.stompClient.publish({
+        destination: '/app/createRoom',
+        body: JSON.stringify({ players }),
+      });
+    }
+  }
+
+  // --- Generic message sender ---
+  sendMessage(message: { type: string; payload: MessagePayload }) {
+    console.log('Sending message:', message);
+  }
 
   // --- Game actions ---
   playCard(roomId: number, playerId: number, card: any) {
@@ -138,16 +183,6 @@ export class WebsocketService {
       this.stompClient.publish({
         destination: '/app/drawFour',
         body: JSON.stringify({ roomId, playerId }),
-      });
-    }
-  }
-
-  // --- Lobby actions ---
-  createRoom(players: string[]) {
-    if (this.stompClient && this.stompClient.connected) {
-      this.stompClient.publish({
-        destination: '/app/createRoom',
-        body: JSON.stringify({ players })
       });
     }
   }

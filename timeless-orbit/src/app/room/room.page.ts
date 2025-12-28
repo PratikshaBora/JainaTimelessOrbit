@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { WebsocketService } from '../services/websocket';
+import { WebsocketService } from '../services/websocket.service';
 
 interface Card {
   aara?: string;
