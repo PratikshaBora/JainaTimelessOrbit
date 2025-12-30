@@ -6,12 +6,21 @@ import java.util.List;
 
 public class GameRoom {
 
+	private int id;
 	public List<Player> players = new ArrayList<>();
 	public List<Card> drawPile = new ArrayList<>();
 	public List<Card> discardPile = new ArrayList<>();
 
 	public int currentPlayerIndex = 0;
 	public boolean clockwise = true;
+
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
 
 	public void prepare_card() {
 		for (Aara a : Aara.values()) {

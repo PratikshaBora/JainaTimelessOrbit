@@ -1,4 +1,4 @@
-<ion-header>
+<!-- <ion-header>
   <ion-toolbar>
     <ion-title class="game-title">TIMELESS ORBIT</ion-title>
   </ion-toolbar>
@@ -36,6 +36,48 @@
       <ion-button expand="block" type="submit" [disabled]="loginForm.invalid">
         Login
       </ion-button>
+    </form>
+  </div>
+</ion-content> -->
+
+<ion-header>
+  <ion-toolbar>
+    <ion-title class="game-title">TIMELESS ORBIT</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="login-container">
+    <h2>Login</h2>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
+      <div class="form-row">
+        <label for="username">Username:</label>
+        <input
+          type="text"
+          id="username"
+          formControlName="username"
+          placeholder="Enter your username"
+        />
+      </div>
+      <div class="error" *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched">
+        Username must be at least 3 characters
+      </div>
+
+      <div class="form-row">
+        <label for="password">Password:</label>
+        <input
+          type="password"
+          id="password"
+          formControlName="password"
+          placeholder="Enter your password"
+        />
+      </div>
+      <div class="error" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+        Password must be at least 6 characters
+      </div>
+
+      <button type="submit" [disabled]="loginForm.invalid">Login</button>
     </form>
   </div>
 </ion-content>

@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { WebsocketService } from '../services/websocket.service';
 import { PlayerService } from '../services/player.service';
 import { MessagePayload } from '../models/message-payload';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -20,7 +21,8 @@ export class LoginPage implements OnInit {
     private formBuilder: FormBuilder,
     private router: Router,
     private websocketService: WebsocketService,
-    private playerService: PlayerService
+    private playerService: PlayerService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
@@ -31,24 +33,21 @@ export class LoginPage implements OnInit {
   }
 
   onLogin() {
-    if (this.loginForm.valid) {
-      const { username, password } = this.loginForm.value;
+   if (this.loginForm.valid) {
+    const { username, password } = this.loginForm.value;
 
-      // Use PlayerService to add or get player
-      this.currentUser = this.playerService.addOrGetPlayer(username, password);
+    // Use PlayerService to add or get player
+    this.currentUser = this.playerService.addOrGetPlayer(username, password);
 
-      alert(`Welcome ${username}! 🎉`);
-      this.router.navigate(['/home']);
+    alert(`Welcome ${username}! 🎉`);
+    this.router.navigate(['/home']);
 
-      // Notify backend via WebSocket (avoid sending password ideally)
-      this.websocketService.sendMessage({
-        type: 'LOGIN',
-        payload: { username }
-      });
-    } else {
-      alert('Please enter valid credentials ❌');
-    }
+    // Notify backend via WebSocket (avoid sending password ideally)
+    this.websocketService.joinLobby(username);
+  } else {
+  alert('Please enter valid credentials ❌');
   }
+}
 
   // Delegate score update to PlayerService
   updateScore(username: string, points: number) {

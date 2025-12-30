@@ -22,14 +22,17 @@ import com.timelessOrbit.gamestate.Card;
 @Controller
 @CrossOrigin(origins = "http://localhost:8100",allowCredentials = "true")
 public class GameController {
-    private final GameState gameState = new GameState();
+	
+	@Autowired
+    private GameState gameState = new GameState();
 
     // --- Lobby Management ---
     @MessageMapping("/join")
     @SendTo("/topic/lobby")
-    public String join(Player player) {
+    public List<Player> join(Player player) {
+    	System.out.println("Player : "+player.getUsername());
         gameState.addPlayer(player);
-        return "Player " + player.getUsername() + " joined!";
+        return new ArrayList<Player>(gameState.getPlayers());
     }
     
     @MessageMapping("/leaveLobby")
@@ -47,6 +50,23 @@ public class GameController {
 
 
     // --- Core gameplay ---
+    
+    public List<Player> playRoom() {
+    	System.out.println("Creating a play room");
+        gameState.checkRoom();
+        return new ArrayList<Player>(gameState.getRoomPlayers());
+    }
+    @MessageMapping("/startGame")
+    @SendTo("/topic/game")
+    public GameUpdate startGame() {
+        if (gameState.getPlayers().size() < 2) {
+            return new GameUpdate(-1, false, null);
+        }
+        GameRoom room = gameState.createRoom(gameState.getPlayers());
+        return new GameUpdate(room.getId(), true, null);
+    }
+
+    
     @MessageMapping("/playCard")
     @SendTo("/topic/game")
     public GameUpdate playCard(GameMove move) {

@@ -10,6 +10,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { LobbyPage } from './lobby/lobby.page';
 import { FormsModule } from '@angular/forms';
 import { ScoreboardComponent } from './scoreboard/scoreboard.component';
+import { HttpClientModule } from '@angular/common/http';
 
 
 @NgModule({
@@ -22,7 +23,7 @@ import { ScoreboardComponent } from './scoreboard/scoreboard.component';
     IonicModule.forRoot(),
     AppRoutingModule,
     FormsModule,
-
+    HttpClientModule,
     // SocketIoModule.forRoot(config)
 ],
   providers: [{ provide: RouteReuseStrategy, useClass: IonicRouteStrategy }],

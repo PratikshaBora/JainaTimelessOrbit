@@ -1,0 +1,10 @@
+.button-row {
+  display: flex;
+  justify-content: flex-end; /* ✅ align to right */
+  gap: 8px;                  /* space between buttons */
+  margin-top: 12px;
+}
+
+ion-button {
+  border-radius: 8px;        /* ✅ decent rounded shape */
+}

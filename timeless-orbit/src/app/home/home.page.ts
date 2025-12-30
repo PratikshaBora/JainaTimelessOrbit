@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { WebsocketService } from '../services/websocket.service';
 import { MessagePayload } from '../models/message-payload';
 import { PlayerService } from '../services/player.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-home',
@@ -13,6 +14,7 @@ import { PlayerService } from '../services/player.service';
 export class HomePage implements OnInit {
   leaderboard: MessagePayload[] = [];
   currentPosition: number | string = 'Not Started';
+  private subscription!: Subscription;
 
   constructor(
     private router: Router,
@@ -27,14 +29,22 @@ export class HomePage implements OnInit {
         .slice(0, 5);
 
       const currentUser = this.playerService.getCurrentUser();
+      console.log(currentUser);
       if (currentUser) {
-        this.currentPosition =
-          this.leaderboard.findIndex(p => p.username === currentUser.username) + 1;
+        const index = this.leaderboard.findIndex(p => p.username === currentUser.username);
+        this.currentPosition = index >= 0 ? index + 1 : 'Not in Top 5';
       }
     });
   }
   startGame() {
+    console.log("inside home start game");
     this.currentPosition = 'Waiting in Lobby';
     this.router.navigate(['/lobby']);
+  }
+
+  ngOnDestroy(): void {
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+    }
   }
 }

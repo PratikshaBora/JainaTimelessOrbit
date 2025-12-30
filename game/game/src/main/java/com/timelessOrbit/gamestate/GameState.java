@@ -1,76 +1,132 @@
 package com.timelessOrbit.gamestate;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+@Component   // ✅ makes GameState managed by Spring
 public class GameState {
 	
+	@Autowired
+	SimpMessagingTemplate messagingTemplate;
 	List<Player> waitingPlayers = new ArrayList<Player>();
 	List<GameRoom> gameRooms = new ArrayList<GameRoom>();
 	
 	private List<PlayerScore> pastScores = new ArrayList<>();
 	
 	long firstPlayerJoinTime = 0;
+	private final long timeoutMillis = 2 * 60 * 1000; // configurable later
 	
 	//When a player joins, they go into waitingPlayers.
 	public void addPlayer(Player p) {
-	
-	    waitingPlayers.add(p);
+		System.out.println("-------GameState instance: " + this.hashCode()+"------------");
+		waitingPlayers.add(p);
+	    System.out.println(waitingPlayers);
+	    System.out.println("No of waiting players : "+waitingPlayers.size());
+	    
 		// We need to track when the first player entered the queue.
-
-		if (waitingPlayers.size() == 1) {
+	    if (waitingPlayers.size() == 1) {
 		    firstPlayerJoinTime = System.currentTimeMillis();
 		}
-		
-	    tryCreateRoom();
 	}
 	
-	/*
-	 * This method checks: 
-	 * - If 4 players are waiting, create a room immediately 
-	 * - If 2 minutes passed, create a room with whoever is waiting (even 2 or 3
-	 * players)
-	 */
-	private void tryCreateRoom() {
-	    long now = System.currentTimeMillis();
+	// ✅ run every 30- seconds
+    @Scheduled(fixedRate = 30000)
+    public void scheduledRoomCheck() {
+    	System.out.println("-------GameState instance: " + this.hashCode()+"------------");
+    	System.out.println("inside scheduled"+waitingPlayers.size());
+        checkRoom();   // call your existing method
+    }
 
-	    // Case 1: 4 players ready
-	    if (waitingPlayers.size() >= 4) {
-	        createRoom(4);
-	        return;
-	    }
+    public void checkRoom() {
+    	System.out.println("-------GameState instance: " + this.hashCode()+"------------");
+    	System.out.println("checking room to be created");
+    	System.out.println("waiting players : "+waitingPlayers.size());
+        long now = System.currentTimeMillis();
 
-	    // Condition 2: 2 minutes passed
-	    if (waitingPlayers.size() > 0 && (now - firstPlayerJoinTime) >= 2 * 60 * 1000) {
-	        createRoom(waitingPlayers.size());
-	    }
-	}
+        while (!waitingPlayers.isEmpty()) {
+            int size = waitingPlayers.size();
+
+            if (size >= 4) {
+                createRoom(4);
+            } else if (size > 1 && (now - firstPlayerJoinTime) >= timeoutMillis) {
+                createRoom(size);
+            } else if (size == 1 && (now - firstPlayerJoinTime) >= timeoutMillis) {
+                messagingTemplate.convertAndSend("/topic/lobbyStatus",
+                        "Only one player remaining, auto-adding player");
+            } else {
+                break; // wait for more players or timeout
+            }
+        }
+    }
+
 	
-	private void createRoom(int count) {
+	public void createRoom(int count) {
 	    GameRoom room = new GameRoom();
 	    room.players = new ArrayList<>();
 	    room.discardPile = new ArrayList<>();
 	    
 	    int roomId = gameRooms.size(); // simple auto-increment
+	    room.setId(roomId);
 
 	    for (int i = 0; i < count; i++) {
-	    	Player p = waitingPlayers.remove(0);
-	    	p.setRoomId(roomId);		// assign room number
-	        room.players.add(p);
+	    	if (!waitingPlayers.isEmpty()) {
+	    	    Player p = waitingPlayers.remove(0);
+	    	    p.setRoomId(roomId);		// assign room number
+		        room.players.add(p);
+	    	}
 	    }
-
 	    room.prepare_card();
 	    room.distribute();
-
 	    gameRooms.add(room);
 
 	    System.out.println("✅ GameRoom " + roomId + " created with " + count + " players");
-
+	    
+	    // NEW: broadcast room creation
+	    messagingTemplate.convertAndSend("/topic/rooms", room);
+	    // ✅ Broadcast game start
+	    messagingTemplate.convertAndSend("/topic/game", room);
+	    
 	    // Reset timer if queue still has players
-	    if (waitingPlayers.size() > 0) {
+	    if (!waitingPlayers.isEmpty()) {
 	        firstPlayerJoinTime = System.currentTimeMillis();
 	    }
 	}	
+	
+	// New overload: create a room from a specific list of players
+	public GameRoom createRoom(List<Player> selectedPlayers) {
+	    GameRoom room = new GameRoom();
+	    room.players = new ArrayList<>();
+	    room.discardPile = new ArrayList<>();
+
+	    int roomId = gameRooms.size(); // auto-increment
+	    room.setId(roomId);
+
+	    for (Player p : selectedPlayers) {
+	        // remove from waiting list if present
+	        waitingPlayers.removeIf(wp -> wp.getId() == p.getId());
+	        p.setRoomId(roomId);
+	        room.getPlayers().add(p);
+	    }
+
+	    room.prepare_card();   // or rename to prepareCards()
+	    room.distribute();     // or rename to distributeCards()
+
+	    gameRooms.add(room);
+
+	    System.out.println("✅ GameRoom " + roomId + " created with " + selectedPlayers.size() + " players");
+
+	    if (!waitingPlayers.isEmpty()) {
+	        firstPlayerJoinTime = System.currentTimeMillis();
+	    }
+
+	    return room;
+	}
 	
 	public Player getCurrentPlayer(int roomId) {
 	    return gameRooms.get(roomId).getCurrentPlayer();
@@ -116,7 +172,7 @@ public class GameState {
 	        }
 	        System.out.println("Room " + roomId + " ended. Scores saved.");
 	    }
-	    gameRooms.set(roomId, null); // mark as ended
+	    gameRooms.remove(roomId); // mark as ended
 	    return scores;
 	}
 
@@ -258,6 +314,11 @@ public class GameState {
 	// Return all players currently waiting in lobby
 	public List<Player> getPlayers() {
 	    return new ArrayList<>(waitingPlayers);
+	}
+
+	public Collection<? extends Player> getRoomPlayers() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

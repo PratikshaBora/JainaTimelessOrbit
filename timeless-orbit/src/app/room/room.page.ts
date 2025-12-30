@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { WebsocketService } from '../services/websocket.service';
+import { PlayerService } from '../services/player.service';
 
 interface Card {
   aara?: string;
@@ -41,27 +42,34 @@ export class RoomPage implements OnInit, OnDestroy {
   private jjInterval: any;
 
   roomId: number = 0; // numeric roomId
-  myPlayerId: number = 1; // set dynamically after join
+  myPlayerId: number = 0; // will be set from PlayerService
 
-  constructor(private router: Router, private wsService: WebsocketService) {}
+  constructor(
+    private router: Router,
+    private wsService: WebsocketService,
+    private playerService: PlayerService
+  ) {}
 
-  ionViewDidEnter()
-  {
-    this.ngOnInit();
-  }
+  // ionViewDidEnter()
+  // {
+  //   this.ngOnInit();
+  // }
 
   ngOnInit() {
+    // ✅ Ensure connection exists
     this.wsService.connect();
 
-    // Subscribe to game updates
-    this.wsService['stompClient'].subscribe('/topic/game', (message: any) => {
-      const state = JSON.parse(message.body);
+    // ✅ Subscribe via WebsocketService helper, not raw stompClient
+    this.wsService.subscribeToGame((state: any) => {
       this.applyState(state);
     });
 
-    // Notify backend that this player entered the lobby
-    console.log('ngOnInit');
-    this.wsService.joinLobby('Pratiksha');
+    // ✅ Use actual logged-in user
+    const currentUser = this.playerService.getCurrentUser();
+    if (currentUser) {
+      this.myPlayerId = currentUser.id;
+      this.wsService.joinLobby(currentUser.username);
+    }
   }
 
   ngOnDestroy() {
