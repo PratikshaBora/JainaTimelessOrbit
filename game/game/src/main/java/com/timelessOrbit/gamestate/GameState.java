@@ -38,15 +38,15 @@ public class GameState {
 	// ✅ run every 30- seconds
     @Scheduled(fixedRate = 30000)
     public void scheduledRoomCheck() {
-    	System.out.println("-------GameState instance: " + this.hashCode()+"------------");
+//    	System.out.println("-------GameState instance: " + this.hashCode()+"------------");
     	System.out.println("inside scheduled"+waitingPlayers.size());
         checkRoom();   // call your existing method
     }
 
     public void checkRoom() {
-    	System.out.println("-------GameState instance: " + this.hashCode()+"------------");
-    	System.out.println("checking room to be created");
-    	System.out.println("waiting players : "+waitingPlayers.size());
+//    	System.out.println("-------GameState instance: " + this.hashCode()+"------------");
+//    	System.out.println("checking room to be created");
+    	System.out.println("waiting players for room allotment: "+waitingPlayers.size());
         long now = System.currentTimeMillis();
 
         while (!waitingPlayers.isEmpty()) {
@@ -87,10 +87,14 @@ public class GameState {
 
 	    System.out.println("✅ GameRoom " + roomId + " created with " + count + " players");
 	    
-	    // NEW: broadcast room creation
-	    messagingTemplate.convertAndSend("/topic/rooms", room);
-	    // ✅ Broadcast game start
-	    messagingTemplate.convertAndSend("/topic/game", room);
+//	    // NEW: broadcast room creation
+//	    messagingTemplate.convertAndSend("/topic/rooms", room);
+//	    // ✅ Broadcast game start
+//	    messagingTemplate.convertAndSend("/topic/game", room);
+	    
+	    // 👉 Convert to DTO and broadcast here
+	    GameRoomDTO dto = convertToDTO(room);
+	    messagingTemplate.convertAndSend("/topic/game/" + roomId, dto);
 	    
 	    // Reset timer if queue still has players
 	    if (!waitingPlayers.isEmpty()) {
@@ -98,6 +102,21 @@ public class GameState {
 	    }
 	}	
 	
+	private GameRoomDTO convertToDTO(GameRoom room) {
+		GameRoomDTO dto = new GameRoomDTO();
+	    dto.setRoomId(room.getId());
+
+	    List<PlayerDTO> playerDTOs = room.players.stream()
+	        .map(p -> new PlayerDTO(p.getUsername(), p.getPoints(), p.getHand()))
+	        .toList();
+
+	    dto.setPlayers(playerDTOs);
+	    dto.setDiscardPile(room.discardPile);
+	    dto.setDrawPile(room.drawPile);
+
+	    return dto;
+	}
+
 	// New overload: create a room from a specific list of players
 	public GameRoom createRoom(List<Player> selectedPlayers) {
 	    GameRoom room = new GameRoom();
