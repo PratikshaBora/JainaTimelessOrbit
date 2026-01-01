@@ -2,21 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { WebsocketService } from '../services/websocket.service';
 import { PlayerService } from '../services/player.service';
-
-interface Card {
-  aara?: string;
-  dwar?: string;
-  type?: string;
-  points?: number;
-}
-
-interface Player {
-  id: number;
-  username: string;
-  score: number;
-  handCount: number;
-  isTurn?: boolean;
-}
+import { Card, PlayerDTO, GameRoomDTO } from '../models/game.models'; // ✅ use shared models
 
 @Component({
   selector: 'app-room',
@@ -25,16 +11,16 @@ interface Player {
   standalone: false,
 })
 export class RoomPage implements OnInit, OnDestroy {
-  players: Player[] = [];
-  activePlayer?: Player;
+  players: (PlayerDTO & { handCount: number; isTurn: boolean })[] = [];
+  activePlayer?: PlayerDTO;
   isMyTurn = false;
+
+  topDiscardCard?: Card;
+  myHand: Card[] = [];
+  selectedCard?: Card;
 
   drawPileCount = 0;
   discardPileCount = 0;
-  topDiscardCard?: Card;
-
-  myHand: Card[] = [];
-  selectedCard?: Card;
 
   turnTimer = 60;
   jjTimer = 60;
@@ -78,27 +64,33 @@ export class RoomPage implements OnInit, OnDestroy {
     this.wsService.disconnect();
   }
 
-  private applyState(state: any): void {
-    this.players = state.players;
-    this.activePlayer = state.activePlayer;
-    this.isMyTurn = state.isMyTurn;
-    this.myHand = state.myHand;
-    this.drawPileCount = state.drawPileCount;
-    this.discardPileCount = state.discardPileCount;
-    this.topDiscardCard = state.topDiscardCard;
+  private applyState(state: GameRoomDTO): void {
+  this.players = state.players.map(p => ({
+    ...p,
+    handCount: p.hand?.length ?? 0,
+    isTurn: p.id === state.currentPlayerId
+  }));
 
-    if (this.isMyTurn) {
-      this.startTurnTimer();
-      if (this.myHand.length === 1) this.startJaiJinendraTimer();
-    } else {
-      clearInterval(this.turnInterval);
-      clearInterval(this.jjInterval);
-    }
+  this.activePlayer = state.players.find(p => p.id === state.currentPlayerId);
+  this.isMyTurn = state.currentPlayerId === this.myPlayerId;
+  this.myHand = state.players.find(p => p.id === this.myPlayerId)?.hand ?? [];
 
-    if (this.drawPileCount === 0) {
-      this.wsService.endgameResolution(this.roomId);
-    }
+  this.drawPileCount = state.drawPile.length;
+  this.discardPileCount = state.discardPile.length;
+  this.topDiscardCard = state.discardPile[state.discardPile.length - 1];
+
+  if (this.isMyTurn) {
+    this.startTurnTimer();
+    if (this.myHand.length === 1) this.startJaiJinendraTimer();
+  } else {
+    clearInterval(this.turnInterval);
+    clearInterval(this.jjInterval);
   }
+
+  if (this.drawPileCount === 0) {
+    this.wsService.endgameResolution(this.roomId);
+  }
+}
 
   // --- UI actions ---
   onSelectCard(card: Card): void {

@@ -18,6 +18,7 @@ import com.timelessOrbit.gamestate.Player;
 import com.timelessOrbit.gamestate.PlayerScore;
 import com.timelessOrbit.gamestate.GameEngine;
 import com.timelessOrbit.gamestate.Card;
+import com.timelessOrbit.gamestate.ColorChangeMove;
 
 @Controller
 @CrossOrigin(origins = "http://localhost:8100",allowCredentials = "true")
@@ -50,7 +51,6 @@ public class GameController {
 
 
     // --- Core gameplay ---
-    
     public List<Player> playRoom() {
     	System.out.println("Creating a play room");
         gameState.checkRoom();
@@ -65,8 +65,6 @@ public class GameController {
         GameRoom room = gameState.createRoom(gameState.getPlayers());
         return new GameUpdate(room.getId(), true, null);
     }
-
-    
     @MessageMapping("/playCard")
     @SendTo("/topic/game")
     public GameUpdate playCard(GameMove move) {
@@ -74,7 +72,6 @@ public class GameController {
         Player winner = gameState.checkAndHandleGameOver(move.getRoomId());
         return new GameUpdate(move.getRoomId(), success, winner);
     }
-
     @MessageMapping("/drawCard")
     @SendTo("/topic/game")
     public GameUpdate drawCard(GameMove move) {
@@ -84,7 +81,6 @@ public class GameController {
         drawCards(player, room, 1);
         return new GameUpdate(move.getRoomId(), true, null);
     }
-
     // --- New actions ---
     @MessageMapping("/pickDiscard")
     @SendTo("/topic/game")
@@ -104,7 +100,6 @@ public class GameController {
                 player.getHand().add(card);
                 success = false;
             }
-
             return new GameUpdate(move.getRoomId(), success, null);
         }
         return new GameUpdate(move.getRoomId(), false, null);
@@ -119,7 +114,6 @@ public class GameController {
 
         // Mark declaration to avoid auto-penalty in GameEngine
         player.changeSaidJaiJinendra(true);
-
         if (player.getHand().size() == 1) {
             Card lastCard = player.getHand().get(0);
             boolean canPlay = engine.isValidMove(lastCard, room.getTopDiscard());
@@ -172,16 +166,18 @@ public class GameController {
 
         return new GameUpdate(move.getRoomId(), true, winner);
     }
-
     @MessageMapping("/drawTwo")
     @SendTo("/topic/game")
     public GameUpdate drawTwo(GameMove move) {
         GameRoom room = gameState.getGameRooms().get(move.getRoomId());
         Player player = room.getPlayers().get(move.getPlayerId());
-        drawCards(player, room, 2);
+        
+        new GameEngine(room).drawToPlayer(player, 2);
+     // Optionally broadcast updated room state
+        messagingTemplate.convertAndSend("/topic/game/" + room.getId(), room.toDTO());
+//      drawCards(player, room, 2);
         return new GameUpdate(move.getRoomId(), true, null);
     }
-
     @MessageMapping("/drawFour")
     @SendTo("/topic/game")
     public GameUpdate drawFour(GameMove move) {
@@ -190,11 +186,56 @@ public class GameController {
         drawCards(player, room, 4);
         return new GameUpdate(move.getRoomId(), true, null);
     }
-
     // Utility
     public void drawCards(Player player, GameRoom room, int count) {
         for (int i = 0; i < count && !room.drawPile.isEmpty(); i++) {
             player.getHand().add(room.drawPile.remove(0));
         }
+    }
+    // --- New special card actions ---
+    @MessageMapping("/skipTurn")
+    @SendTo("/topic/game")
+    public GameUpdate skipTurn(GameMove move) {
+        GameRoom room = gameState.getGameRooms().get(move.getRoomId());
+        GameEngine engine = new GameEngine(room);
+        
+        boolean success = engine.skipTurn(move.getPlayerId());
+     // Broadcast updated room state
+        messagingTemplate.convertAndSend("/topic/game/" + room.getId(), room.toDTO());
+        return new GameUpdate(move.getRoomId(), success, null);
+    }
+    @MessageMapping("/reverseTurn")
+    @SendTo("/topic/game")
+    public GameUpdate reverseTurn(GameMove move) {
+        GameRoom room = gameState.getGameRooms().get(move.getRoomId());
+        GameEngine engine = new GameEngine(room);
+        boolean success = engine.reverseTurn();
+     // Broadcast updated room state
+        messagingTemplate.convertAndSend("/topic/game/" + room.getId(), room.toDTO());
+        return new GameUpdate(move.getRoomId(), success, null);
+    }
+    @MessageMapping("/colorChange")
+    @SendTo("/topic/game")
+    public GameUpdate colorChange(ColorChangeMove move) {
+        GameRoom room = gameState.getRoom(move.getRoomId());
+        GameEngine engine = new GameEngine(room);
+        
+        engine.applyColorChange(move.getColor()); // chosen aara
+     // Broadcast updated room state
+        messagingTemplate.convertAndSend("/topic/game/" + room.getId(), room.toDTO());
+        return new GameUpdate(move.getRoomId(), true, null);
+    }
+    @MessageMapping("/colorChangeDrawFour")
+    @SendTo("/topic/game")
+    public GameUpdate colorChangeDrawFour(ColorChangeMove move) {
+        GameRoom room = gameState.getRoom(move.getRoomId());
+        GameEngine engine = new GameEngine(room);
+             
+        Player nextPlayer = room.getNextPlayer(move.getPlayerId());
+        engine.drawToPlayer(nextPlayer, 4);		// pick 4 from draw pile due to drawFour
+        engine.applyColorChange(move.getColor()); // chosen aara
+     // Optionally broadcast updated room state
+        messagingTemplate.convertAndSend("/topic/game/" + room.getId(), room.toDTO());
+        return new GameUpdate(move.getRoomId(), true, null);
     }
 }

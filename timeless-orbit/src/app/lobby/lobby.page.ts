@@ -1,8 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { Router } from '@angular/router';
 import { WebsocketService } from '../services/websocket.service';
 import { MessagePayload } from '../models/message-payload';
 import { PlayerService } from '../services/player.service';
+import { Card, GameRoomDTO, PlayerDTO } from '../models/game.models';
 
 @Component({
   selector: 'app-lobby',
@@ -11,10 +12,16 @@ import { PlayerService } from '../services/player.service';
   standalone: false
 })
 export class LobbyPage implements OnInit, OnDestroy {
-  players: MessagePayload[] = [];
+  currentRoomId!: number;   // non-null assertion
+  players: PlayerDTO[] = [];
+  discardPile: Card[] = [];
+  drawPile: Card[] = [];
+  currentView: string = 'lobby';
   timeLeft: number = 120;
   interval: any;
   rooms$ = this.wsService.rooms$;
+  myPlayer?: PlayerDTO;
+  playersJoin:MessagePayload[] = [];
 
   constructor(
     private router: Router,
@@ -42,17 +49,39 @@ export class LobbyPage implements OnInit, OnDestroy {
         this.wsService.joinLobby(currentUser.username); // ✅ use real username
       }
     );
-
     this.wsService.players$.subscribe((players: MessagePayload[]) => {
-      this.players = players;
+      this.playersJoin = players;
     });
-    // this.interval = setInterval(() => {
-    //   this.timeLeft--;
-    //   if (this.timeLeft <= 0) {
-    //     clearInterval(this.interval);
-    //     this.createRoom();
-    //   }
-    // }, 1000);
+  }
+
+  selectedCard?: Card;
+
+  selectCard(card: Card) {
+    this.selectedCard = card;
+  }
+
+  playCard(card: Card) {
+    if (!this.currentRoomId) {
+      console.error('No room joined yet!');
+      return;
+    }
+
+    const message = {
+      action: 'PLAY_CARD',
+      card: card,
+      roomId: this.currentRoomId,
+      player: this.currentUserName
+    };
+    this.wsService.sendMessage(message);
+    this.selectedCard = undefined;
+  }
+
+  // Keyboard shortcut (desktop)
+  @HostListener('document:keydown.enter')
+  handleEnter() {
+    if (this.selectedCard) {
+      this.playCard(this.selectedCard);
+    }
   }
 
   leaveLobby() {
@@ -65,6 +94,19 @@ export class LobbyPage implements OnInit, OnDestroy {
     console.log('Requesting backend to start game...');
     this.wsService.startGame();   // ✅ no players array
     this.router.navigate(['/room']);
+  }
+
+  joinRoom(roomId: number) {
+    this.currentRoomId = roomId;
+    this.wsService.subscribeToRoom(roomId, (room: GameRoomDTO) =>
+    {
+      this.players = room.players;
+      this.discardPile = room.discardPile;
+      this.drawPile = room.drawPile;
+      // Identify current player
+      this.myPlayer = room.players.find(p => p.username === this.currentUserName);
+      this.currentView = 'game'; // switch UI
+    });
   }
 
   playRoom() {

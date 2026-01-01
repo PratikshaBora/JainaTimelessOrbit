@@ -28,7 +28,7 @@
     <ion-item *ngFor="let player of players" [class.active-player]="player.id === activePlayer?.id">
       <ion-label>
         <h3>{{ player.username }}</h3>
-        <p>Score: {{ player.score }}</p>
+        <p>Score: {{ player.points }}</p>
         <p *ngIf="player.isTurn" style="color: green; font-weight: bold;">🎯 It's their turn!</p>
         <p *ngIf="player.handCount === 1" style="color: orange; font-weight: bold;">🟠 Jai Jinendra eligible</p>
       </ion-label>
@@ -42,7 +42,7 @@
     <ion-card *ngIf="topDiscardCard as card" (click)="onPickDiscard()" [class.clickable]="isMyTurn">
       <ion-card-header>
         <ion-card-title>{{ card.aara }} - {{ card.dwar }}</ion-card-title>
-        <ion-card-subtitle>Points: {{ card.points }}</ion-card-subtitle>
+        <ion-card-subtitle>Points: {{ card.pointValue }}</ion-card-subtitle>
       </ion-card-header>
     </ion-card>
     <p>Total cards: {{ discardPileCount }}</p>
@@ -68,7 +68,7 @@
           <ion-card (click)="onSelectCard(card)" [class.selected]="selectedCard === card">
             <ion-card-header>
               <ion-card-title>{{ card.aara }} - {{ card.dwar }}</ion-card-title>
-              <ion-card-subtitle>Points: {{ card.points }}</ion-card-subtitle>
+              <ion-card-subtitle>Points: {{ card.pointValue }}</ion-card-subtitle>
             </ion-card-header>
           </ion-card>
         </ion-col>

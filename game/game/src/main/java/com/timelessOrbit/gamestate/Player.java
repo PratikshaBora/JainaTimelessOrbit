@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Player {
-	int id;
+	static int id=1;
 	String username;
 	String password;
 	int points;
@@ -19,7 +19,7 @@ public class Player {
 	}
 	
 	public Player() {
-	
+		id++;
 	}
 	
 	public Player(String username, String password) {
@@ -30,10 +30,6 @@ public class Player {
 
 	public int getId() {
 		return id;
-	}
-
-	public void setId(int id) {
-		this.id = id;
 	}
 
 	public String getUsername() {

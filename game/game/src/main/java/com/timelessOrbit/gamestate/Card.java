@@ -1,20 +1,13 @@
 package com.timelessOrbit.gamestate;
 
 public class Card {
-	/*
-	 * String aara; String dwar;
-	 * 
-	 * 	public Card(String aara, String dwar) { 
-	 * 	super(); 
-	 * 	this.aara = aara; 
-	 * 	this.dwar = dwar; 
-	 * }
-	 */
 	
 	public Aara aara;
     public Dwar dwar;
     public CardType type;
-
+    public String imageUrl; // ✅ new field
+    public int pointValue;
+    
     public Card(Aara aara, Dwar dwar) {
         this.aara = aara;
         this.dwar = dwar;
@@ -25,25 +18,57 @@ public class Card {
             this.type = CardType.WILD;
         else
             this.type = CardType.NORMAL;
+        
+     // ✅ Build image URL based on naming convention
+        this.imageUrl = "/assets/cards/" 
+                        + aara.name().toLowerCase() 
+                        + "_" 
+                        + dwar.name().toLowerCase() 
+                        + ".jpg";
+        
+        setPointValue();
     }
-    
     public int getPointValue() {
-        switch (dwar) {
-            case SKIP:
-            case REVERSE:
-            case ADD2:
-                return 5;
-
-            case COLOR_CHANGE:
-            case COLOR_CHANGE_ADD4:
-                return 10;
-
-            default:
-                return 1; // normal cards
-        }
+    	return pointValue;
     }
-
-    @Override
+    public Aara getAara() {
+		return aara;
+	}
+	public void setAara(Aara aara) {
+		this.aara = aara;
+	}
+	public Dwar getDwar() {
+		return dwar;
+	}
+	public void setDwar(Dwar dwar) {
+		this.dwar = dwar;
+	}
+	public CardType getType() {
+		return type;
+	}
+	public void setType(CardType type) {
+		this.type = type;
+	}
+	public String getImageUrl() {
+		return imageUrl;
+	}
+	public void setPointValue() {
+		switch (dwar) {
+        	case SKIP:
+        	case REVERSE:
+        	case ADD2:
+        		pointValue = 5;
+        		break;
+        	case COLOR_CHANGE:
+        	case COLOR_CHANGE_ADD4:
+        		pointValue = 10;
+        		break;
+        	default:
+        		pointValue = 2; // normal cards
+            break;
+		}
+	}
+	@Override
     public String toString() {
         return aara + " - " + dwar;
     }

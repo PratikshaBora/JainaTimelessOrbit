@@ -4,34 +4,95 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="ion-padding" [fullscreen]="true">
-  <h2>Welcome, {{ currentUserName }} 👋</h2>
-  <p>Waiting for players...</p>
-  <p>Time left: {{ timeLeft }} seconds</p>
+<ion-content class="ion-padding dark-theme" [fullscreen]="true">
 
-  <h2>Available Rooms</h2>
-  <div *ngFor="let room of rooms$ | async">
-    Room {{ room.id }} with {{ room.players.length }} players
-  </div>
-  <ion-list>
-    <ion-item *ngFor="let player of players">
-      <ion-label>
-        <strong>{{ player.username }}</strong>
-        <p>Score: {{ player.score ?? 0 }}</p>
-      </ion-label>
-    </ion-item>
-  </ion-list>
+  <!-- ✅ Lobby View -->
+  <div *ngIf="currentView === 'lobby'">
+    <h2>Welcome, {{ currentUserName }} 👋</h2>
+    <p>Waiting for players...</p>
+    <p>Time left: {{ timeLeft }} seconds</p>
 
-  <!-- ✅ Right-aligned small buttons -->
-  <div class="button-row">
-    <ion-button size="small" fill="outline" color="medium" (click)="playRoom()">
-      Play Room
-    </ion-button>
-    <ion-button size="small" fill="outline" color="medium" (click)="refreshLobby()">
-      Refresh
-    </ion-button>
-    <ion-button size="small" fill="solid" color="danger" (click)="leaveLobby()">
-      Leave
-    </ion-button>
+    <h2>Available Rooms</h2>
+    <div *ngFor="let room of rooms$ | async">
+      Room {{ room.id }} with {{ room.players.length }} players
+      <ion-button size="small" fill="outline" color="primary" (click)="joinRoom(room.id)">
+        Join
+      </ion-button>
+    </div>
+
+    <ion-list>
+      <ion-item *ngFor="let player of players">
+        <ion-label>
+          <strong>{{ player.username }}</strong>
+          <p>Score: {{ player.points || 0 }}</p>
+        </ion-label>
+      </ion-item>
+    </ion-list>
+
+    <div class="button-row">
+      <ion-button size="small" fill="outline" color="medium" (click)="refreshLobby()">
+        Refresh
+      </ion-button>
+      <ion-button size="small" fill="solid" color="danger" (click)="leaveLobby()">
+        Leave
+      </ion-button>
+    </div>
   </div>
+
+  <!-- ✅ Game Board View -->
+  <div *ngIf="currentView === 'game'">
+    <h2>Game Started!</h2>
+
+    <!-- Show each player -->
+    <ion-list>
+      <ion-item *ngFor="let player of players">
+        <ion-label>
+          <strong>{{ player.username }}</strong>
+          <p>Score: {{ player.points}}</p>
+        </ion-label>
+      </ion-item>
+    </ion-list>
+
+    <!-- Show current player's hand -->
+    <h3>Your Cards</h3>
+    <div class="card-row">
+      <img
+        *ngFor="let card of myPlayer?.hand"
+        [src]="card.imageURL"
+        alt="{{card.aara}} {{card.dwar}}"
+        class="card-img"
+        [class.selected]="selectedCard === card"
+        (click)="selectCard(card)"
+        (dblclick)="playCard(card)"
+      >
+    </div>
+    <!-- Optional global Play button for mobile -->
+    <ion-button *ngIf="selectedCard"
+            color="primary"
+            (click)="playCard(selectedCard)">
+      Play Selected Card
+    </ion-button>
+    <!-- ✅ Draw Pile -->
+    <h3>Draw Pile</h3>
+    <div class="card-row">
+      <img
+        *ngFor="let card of drawPile"
+        [src]="card.imageURL"
+        alt="{{card.aara}} {{card.dwar}}"
+        class="card-img deal"
+      >
+    </div>
+    <!-- Show discard pile -->
+    <h3>Discard Pile</h3>
+    <div class="card-row">
+      <img
+        *ngFor="let card of discardPile"
+        [src]="card.imageURL"
+        alt="discard card"
+        class="card-img"
+      >
+    </div>
+  </div>
+
 </ion-content>
+<div class="notification reverse">🔄 Turn order reversed!</div>

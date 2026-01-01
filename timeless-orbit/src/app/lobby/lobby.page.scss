@@ -1,10 +1,126 @@
+/* General background */
+ion-content {
+  background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+  font-family: 'Segoe UI', sans-serif;
+  color: #333;
+}
+
+/* Headings */
+h2, h3 {
+  font-weight: 600;
+  margin: 16px 0 8px;
+  color: #222;
+}
+
+/* Player list styling */
+ion-item {
+  --background: #fff;
+  --border-radius: 8px;
+  margin: 6px 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  transition: transform 0.2s ease;
+}
+
+ion-item:hover {
+  transform: translateY(-2px);
+}
+
+/* Buttons row */
 .button-row {
   display: flex;
-  justify-content: flex-end; /* ✅ align to right */
-  gap: 8px;                  /* space between buttons */
-  margin-top: 12px;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
 }
 
 ion-button {
-  border-radius: 8px;        /* ✅ decent rounded shape */
+  --border-radius: 6px;
+  font-size: 0.85rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+ion-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+/* Card rows */
+.card-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+  justify-content: center;
+}
+
+/* Card images */
+.card-img {
+  width: 80px;
+  height: 120px;
+  border-radius: 8px;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+}
+
+/* Hover animation */
+.card-img:hover {
+  transform: translateY(-8px) rotate(-2deg) scale(1.08);
+  box-shadow: 0 12px 20px rgba(0,0,0,0.25);
+}
+
+/* Flip animation (optional) */
+@keyframes flip {
+  0% { transform: rotateY(0); }
+  100% { transform: rotateY(180deg); }
+}
+
+.card-img.flip {
+  animation: flip 0.6s forwards;
+}
+
+/* Deal animation */
+@keyframes deal {
+  0% {
+    transform: translateY(-50px) scale(0.5);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.card-img.deal {
+  animation: deal 0.6s ease forwards;
+}
+.notification.reverse {
+  background: #ff9800;
+  color: #fff;
+  padding: 8px;
+  border-radius: 6px;
+  animation: fadeInOut 3s ease forwards;
+}
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(-20px); }
+  10% { opacity: 1; transform: translateY(0); }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.card-img {
+  width: 80px;
+  height: 120px;
+  border-radius: 8px;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+}
+
+.card-img:hover {
+  transform: translateY(-6px) scale(1.05);
+}
+
+.card-img.selected {
+  border: 3px solid #4caf50; /* green highlight */
+  box-shadow: 0 0 12px rgba(76, 175, 80, 0.8);
 }

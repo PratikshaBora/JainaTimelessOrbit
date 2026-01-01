@@ -1,8 +1,23 @@
 import { Injectable } from '@angular/core';
-import { Client, IMessage } from '@stomp/stompjs';
+import { Client } from '@stomp/stompjs';
 import * as SockJS from 'sockjs-client';
 import { BehaviorSubject } from 'rxjs';
 import { MessagePayload } from '../models/message-payload';
+import { Card, GameRoomDTO } from '../models/game.models';
+import { IMessage } from '@stomp/stompjs';
+import {
+  PlayCardMessage,
+  DrawCardMessage,
+  PickDiscardMessage,
+  JaiJinendraMessage,
+  PenaltyMessage,
+  EndgameMessage,
+  DrawTwoMessage,
+  AaraChangeDrawFourMessage,
+  SkipTurnMessage,
+  ReverseTurnMessage,
+  AaraChangeMessage
+} from '../models/game-message';
 
 @Injectable({
   providedIn: 'root',
@@ -12,6 +27,9 @@ export class WebsocketService {
   private stompClient!: Client;
 
   // Subjects for reactive state
+  private roomSubject = new BehaviorSubject<GameRoomDTO | null>(null);
+  room$ = this.roomSubject.asObservable();
+
   private playersSubject = new BehaviorSubject<MessagePayload[]>([]);
   players$ = this.playersSubject.asObservable();
 
@@ -68,12 +86,25 @@ export class WebsocketService {
         this.roomsSubject.next([...this.roomsSubject.value, room]);
       });
 
+      // Subscribe to room updates
+      this.stompClient.subscribe('/topic/game/${roomId}', (message: IMessage) => {
+        const room: GameRoomDTO = JSON.parse(message.body);
+        this.roomSubject.next(room);
+      });
+
       // ✅ run callback only after connection is established
       if (callback) {
         callback();
       }
     };
     this.stompClient.activate();
+  }
+
+  subscribeToRoom(roomId: number, callback: (room: GameRoomDTO) => void) {
+    this.stompClient.subscribe(`/topic/game/${roomId}`, (message: any) => {
+      const room: GameRoomDTO = JSON.parse(message.body);
+      callback(room);
+    });
   }
 
   disconnect() {
@@ -110,61 +141,6 @@ export class WebsocketService {
       });
     }
   }
-
-  // --- Game actions ---
-  playCard(roomId: number, playerId: number, card: any) {
-    this.publish('/app/playCard', { roomId, playerId, card });
-  }
-
-  drawCard(roomId: number, playerId: number) {
-    this.publish('/app/drawCard', { roomId, playerId });
-  }
-
-  pickDiscard(roomId: number, playerId: number) {
-    this.publish('/app/pickDiscard', { roomId, playerId });
-  }
-
-  jaiJinendra(roomId: number, playerId: number) {
-    this.publish('/app/jaiJinendra', { roomId, playerId });
-  }
-
-  autoPenaltyDraw(roomId: number, playerId: number) {
-    this.publish('/app/penaltyDraw', { roomId, playerId, reason: 'timeout' });
-  }
-
-  jjTimeoutPenalty(roomId: number, playerId: number) {
-    this.publish('/app/jjPenalty', { roomId, playerId, reason: 'jjTimeout' });
-  }
-
-  endgameResolution(roomId: number) {
-    this.publish('/app/endgame', { roomId });
-  }
-
-  drawTwo(roomId: number, playerId: number) {
-    this.publish('/app/drawTwo', { roomId, playerId });
-  }
-
-  drawFour(roomId: number, playerId: number) {
-    this.publish('/app/drawFour', { roomId, playerId });
-  }
-
-  startGame() {
-    if (this.stompClient?.connected) {
-      this.stompClient.publish({
-        destination: '/app/startGame',
-        body: ''   // ✅ no need to send players list
-      });
-    }
-  }
-
-  sendMessage(message: { type: string; payload: any }) {
-    if (this.stompClient?.connected) {
-      this.stompClient.publish({
-        destination: '/app/' + message.type.toLowerCase(), // e.g. /app/update_score
-        body: JSON.stringify(message.payload),
-      });
-    }
-  }
   // --- Helper publish method ---
   private publish(destination: string, body: any) {
     if (this.stompClient?.connected) {
@@ -174,10 +150,74 @@ export class WebsocketService {
       });
     }
   }
-
+  // --- Game actions ---
+  playCard(roomId: number, playerId: number, card: Card) {
+    const payload: PlayCardMessage = { roomId, playerId, card };
+    this.publish('/app/playCard', payload);
+  }
+  drawCard(roomId: number, playerId: number) {
+    const payload: DrawCardMessage = { roomId, playerId };
+    this.publish('/app/drawCard', payload);
+  }
+  pickDiscard(roomId: number, playerId: number) {
+    const payload: PickDiscardMessage = { roomId, playerId };
+    this.publish('/app/pickDiscard', payload);
+  }
+  jaiJinendra(roomId: number, playerId: number) {
+    const payload: JaiJinendraMessage = { roomId, playerId };
+    this.publish('/app/jaiJinendra', payload);
+  }
+  autoPenaltyDraw(roomId: number, playerId: number) {
+    const payload: PenaltyMessage = { roomId, playerId, reason: 'timeout' };
+    this.publish('/app/penaltyDraw', payload);
+  }
+  jjTimeoutPenalty(roomId: number, playerId: number) {
+    const payload: PenaltyMessage = { roomId, playerId, reason: 'jjTimeout' };
+    this.publish('/app/jjPenalty', payload);
+  }
+  endgameResolution(roomId: number) {
+    const payload: EndgameMessage = { roomId };
+    this.publish('/app/endgame', payload);
+  }
+  drawTwo(roomId: number, playerId: number) {
+    const payload: DrawTwoMessage = { roomId, playerId };
+    this.publish('/app/drawTwo', payload);
+  }
+  aaraChangeDrawFour(roomId: number, playerId: number, chosenAara: string) {
+    const payload: AaraChangeDrawFourMessage = { roomId, playerId ,color : chosenAara};
+    this.publish('/app/colorChangeDrawFour', payload);
+  }
+  skipTurn(roomId: number, playerId: number) {
+    const payload: SkipTurnMessage = { roomId, playerId };
+    this.publish('/app/skipTurn', payload);
+  }
+  reverseTurn(roomId: number, playerId: number) {
+    const payload: ReverseTurnMessage = { roomId, playerId };
+    this.publish('/app/reverseTurn', payload);
+  }
+  aaraChange(roomId: number, playerId: number, chosenAara: string) {
+    const payload: AaraChangeMessage = { roomId, playerId, color: chosenAara };
+    this.publish('/app/aaraChange', payload);
+  }
+  startGame() {
+    if (this.stompClient?.connected) {
+      this.stompClient.publish({
+        destination: '/app/startGame',
+        body: ''   // ✅ no need to send players list
+      });
+    }
+  }
+  sendMessage(message: any) {
+  if (this.stompClient?.connected) {
+    this.stompClient.publish({
+        destination: '/app/play',
+        body: JSON.stringify(message),
+      });
+    }
+  }
   subscribeToGame(callback: (state: any) => void) {
-  this.stompClient.subscribe('/topic/game', (message: any) => {
-    callback(JSON.parse(message.body));
-  });
-}
+    this.stompClient.subscribe('/topic/game', (message: any) => {
+      callback(JSON.parse(message.body));
+    });
+  }
 }

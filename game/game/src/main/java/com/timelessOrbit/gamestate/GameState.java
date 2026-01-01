@@ -64,8 +64,6 @@ public class GameState {
             }
         }
     }
-
-	
 	public void createRoom(int count) {
 	    GameRoom room = new GameRoom();
 	    room.players = new ArrayList<>();
@@ -143,7 +141,6 @@ public class GameState {
 	    if (!waitingPlayers.isEmpty()) {
 	        firstPlayerJoinTime = System.currentTimeMillis();
 	    }
-
 	    return room;
 	}
 	
@@ -153,7 +150,6 @@ public class GameState {
 	
 	public Player checkAndHandleGameOver(int roomId) {
 	    GameRoom room = gameRooms.get(roomId);
-
 	    // 1. Check if game is over
 	    if (!room.isGameOver()) {
 	        return null; // game still running
@@ -194,17 +190,12 @@ public class GameState {
 	    gameRooms.remove(roomId); // mark as ended
 	    return scores;
 	}
-
-
 	// Access past scores
 	public List<PlayerScore> getPastScores() {
 	    return new ArrayList<>(pastScores);
 	}
-
-	
 	public boolean playCard(int roomId, int playerId, Card card) {
 	    GameRoom room = gameRooms.get(roomId);
-
 	    // Find the player inside the room
 	    Player player = null;
 	    for (Player p : room.players) {
@@ -219,7 +210,6 @@ public class GameState {
 	    }
 	    // Delegate to GameRoom
 	    boolean success = room.playCard(player, card);
-
 	    // After playing, check if game ended
 	    Player winner = checkAndHandleGameOver(roomId);
 	    if (winner != null) {
@@ -232,13 +222,11 @@ public class GameState {
 		// TODO Auto-generated method stub
 		return gameRooms;
 	}
-	
 	// If player cannot play from hand, they must draw from draw pile.
 	// If drawn card is playable, play immediately; else add to hand.
 	public boolean tryPlayOrReturn(int roomId, Player player, Card chosenCard) {
 	    GameRoom room = gameRooms.get(roomId);
 	    GameEngine engine = new GameEngine(room);
-
 	    // Step 1: if a card was explicitly chosen, try to play it
 	    if (chosenCard != null) {
 	        if (engine.isValidMove(chosenCard, room.getTopDiscard())) {
@@ -248,14 +236,12 @@ public class GameState {
 	            return false;
 	        }
 	    }
-
 	    // Step 2: check if player has any playable card in hand
 	    for (Card c : player.getHand()) {
 	        if (engine.isValidMove(c, room.getTopDiscard())) {
 	            return true; // controller should call playCard() with that card
 	        }
 	    }
-
 	    // Step 3: no playable card → draw from draw pile
 	    if (!room.drawPile.isEmpty()) {
 	        Card drawn = room.drawPile.remove(0);
@@ -266,7 +252,6 @@ public class GameState {
 	            return false;
 	        }
 	    }
-
 	    // Step 4: draw pile empty → endgame triggered externally
 	    System.out.println("⚠️ Draw pile empty, cannot draw. Endgame should be resolved.");
 	    return false;
@@ -275,14 +260,12 @@ public class GameState {
     public Player resolveEndgame(GameRoom room) {
         Player winner = null;
         int lowestHand = Integer.MAX_VALUE;
-
         for (Player p : room.players) {
             if (p.getHand().size() < lowestHand) {
                 lowestHand = p.getHand().size();
                 winner = p;
             }
         }
-
         int bonus = 0;
         for (Player p : room.players) {
             if (p != winner) {
@@ -295,18 +278,15 @@ public class GameState {
 //            winner.setScore(winner.getScore() + bonus);
         	 winner.setPoints(winner.getPoints() + bonus);  // ✅ use Player.setPoints()
         }
-
         System.out.println("🏁 Endgame triggered. Winner: " + winner.getUsername() +
                            " with bonus " + bonus);
         return winner;
     }
-
     // Convenience getter
     public GameRoom getRoom(int roomId) {
         return gameRooms.get(roomId);
     }
-
- // Remove player by ID (from lobby or from any room)
+    // Remove player by ID (from lobby or from any room)
     public String removePlayer(int id) {
         // First check waitingPlayers (lobby)
         for (Player p : waitingPlayers) {
@@ -315,7 +295,6 @@ public class GameState {
                 return p.getUsername() + " left the lobby.";
             }
         }
-
         // Then check active rooms
         for (GameRoom room : gameRooms) {
             if (room != null) {
@@ -325,19 +304,14 @@ public class GameState {
                 }
             }
         }
-
         return "❌ Player with id " + id + " not found.";
     }
-
-
 	// Return all players currently waiting in lobby
 	public List<Player> getPlayers() {
 	    return new ArrayList<>(waitingPlayers);
 	}
-
 	public Collection<? extends Player> getRoomPlayers() {
 		// TODO Auto-generated method stub
 		return null;
 	}
-
 }
