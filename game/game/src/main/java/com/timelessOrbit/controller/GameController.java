@@ -56,15 +56,15 @@ public class GameController {
         gameState.checkRoom();
         return new ArrayList<Player>(gameState.getRoomPlayers());
     }
-    @MessageMapping("/startGame")
-    @SendTo("/topic/game")
-    public GameUpdate startGame() {
-        if (gameState.getPlayers().size() < 2) {
-            return new GameUpdate(-1, false, null);
-        }
-        GameRoom room = gameState.createRoom(gameState.getPlayers());
-        return new GameUpdate(room.getId(), true, null);
-    }
+//    @MessageMapping("/startGame")
+//    @SendTo("/topic/game")
+//    public GameUpdate startGame() {
+//        if (gameState.getPlayers().size() < 2) {
+//            return new GameUpdate(-1, false, null);
+//        }
+//        GameRoom room = gameState.createRoom(gameState.getPlayers());
+//        return new GameUpdate(room.getId(), true, null);
+//    }
     @MessageMapping("/playCard")
     @SendTo("/topic/game")
     public GameUpdate playCard(GameMove move) {
@@ -113,7 +113,7 @@ public class GameController {
         GameEngine engine = new GameEngine(room);
 
         // Mark declaration to avoid auto-penalty in GameEngine
-        player.changeSaidJaiJinendra(true);
+        player.setSaidJaiJinendra(true);
         if (player.getHand().size() == 1) {
             Card lastCard = player.getHand().get(0);
             boolean canPlay = engine.isValidMove(lastCard, room.getTopDiscard());

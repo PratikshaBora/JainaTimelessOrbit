@@ -1,98 +1,51 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>Game Room</ion-title>
-  </ion-toolbar>
-</ion-header>
+<div class="room-layout" *ngIf="isRoomLoaded">
 
-<ion-content [fullscreen]="true" class="ion-padding">
-  <!-- Collapsible header -->
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Room</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <!-- Controller Panel -->
+  <div class="controller-panel">
+    <div class="room-id">Room {{ roomId }}</div>
+    <div class="timer">Timer: {{ timeLeft }}</div>
+    <div class="turn">Turn: {{ activePlayer?.username }}</div>
+    <button class="leave-btn" (click)="leaveRoom()">Leave Room</button>
+  </div>
 
-  <!-- Status / turn banner -->
-  <div class="status-banner" [class.active]="isMyTurn">
-    <span *ngIf="isMyTurn">🎯 Your turn — {{turnTimer}}s left</span>
-    <span *ngIf="!isMyTurn">Waiting for {{activePlayer?.username}} — {{turnTimer}}s</span>
-    <!-- Turn timer progress bar -->
-    <div class="timer-bar">
-      <div class="timer-fill" [style.width.%]="(turnTimer/60)*100"></div>
+  <!-- Game Panel -->
+  <div class="game-panel">
+
+    <!-- Top Opponent -->
+    <div class="top-opponent" *ngIf="opponentsBySlot.top">
+      <!-- horizontal back cards -->
     </div>
-  </div>
 
-  <!-- Players list -->
-  <h2>Players in Room</h2>
-  <ion-list>
-    <ion-item *ngFor="let player of players" [class.active-player]="player.id === activePlayer?.id">
-      <ion-label>
-        <h3>{{ player.username }}</h3>
-        <p>Score: {{ player.points }}</p>
-        <p *ngIf="player.isTurn" style="color: green; font-weight: bold;">🎯 It's their turn!</p>
-        <p *ngIf="player.handCount === 1" style="color: orange; font-weight: bold;">🟠 Jai Jinendra eligible</p>
-      </ion-label>
-      <ion-badge color="medium">{{ player.handCount }} cards</ion-badge>
-    </ion-item>
-  </ion-list>
+    <div class="middle-row">
+      <!-- Left Opponent -->
+      <div class="left-opponent" *ngIf="opponentsBySlot.left">
+        <!-- vertical back cards -->
+      </div>
 
-  <!-- Discard pile -->
-  <div class="board-section">
-    <h2>Discard Pile</h2>
-    <ion-card *ngIf="topDiscardCard as card" (click)="onPickDiscard()" [class.clickable]="isMyTurn">
-      <ion-card-header>
-        <ion-card-title>{{ card.aara }} - {{ card.dwar }}</ion-card-title>
-        <ion-card-subtitle>Points: {{ card.pointValue }}</ion-card-subtitle>
-      </ion-card-header>
-    </ion-card>
-    <p>Total cards: {{ discardPileCount }}</p>
-  </div>
+      <!-- Center Play Area -->
+      <div class="center-area">
+        <div class="draw-pile">Draw: {{ drawPileCount }}</div>
+        <div class="discard-pile">Discard: {{ discardPileCount }}</div>
+        <div class="turn-indicator">Turn: {{ activePlayer?.username }}</div>
+      </div>
 
-  <!-- Draw pile -->
-  <div class="board-section">
-    <h2>Draw Pile</h2>
-    <ion-button color="tertiary" (click)="onDrawCard()" [disabled]="!isMyTurn || drawPileCount === 0">
-      Draw Card ({{ drawPileCount }})
-    </ion-button>
-    <p *ngIf="drawPileCount === 0" style="color: red; font-weight: bold;">
-      Draw pile empty — winner will be declared by lowest hand count
-    </p>
-  </div>
-
-  <!-- Player hand -->
-  <div class="player-hand">
-    <h2>Your Hand</h2>
-    <ion-grid>
-      <ion-row>
-        <ion-col size="6" sizeMd="3" *ngFor="let card of myHand">
-          <ion-card (click)="onSelectCard(card)" [class.selected]="selectedCard === card">
-            <ion-card-header>
-              <ion-card-title>{{ card.aara }} - {{ card.dwar }}</ion-card-title>
-              <ion-card-subtitle>Points: {{ card.pointValue }}</ion-card-subtitle>
-            </ion-card-header>
-          </ion-card>
-        </ion-col>
-      </ion-row>
-    </ion-grid>
-    <p *ngIf="myHand.length === 1" style="color: orange; font-weight: bold;">
-      Jai Jinendra required within {{jjTimer}}s
-    </p>
-    <!-- Jai Jinendra timer progress bar -->
-    <div *ngIf="myHand.length === 1" class="timer-bar">
-      <div class="timer-fill jj" [style.width.%]="(jjTimer/60)*100"></div>
+      <!-- Right Opponent -->
+      <div class="right-opponent" *ngIf="opponentsBySlot.right">
+        <!-- vertical back cards -->
+      </div>
     </div>
-  </div>
 
-  <!-- Game actions -->
-  <div class="game-actions">
-    <ion-button expand="block" color="primary" (click)="onPlaySelected()" [disabled]="!isMyTurn || !selectedCard">
-      Play Selected
-    </ion-button>
-    <ion-button expand="block" color="success" (click)="onJaiJinendra()" [disabled]="!isMyTurn || myHand.length !== 1">
-      Jai Jinendra
-    </ion-button>
-    <ion-button expand="block" color="medium" (click)="leaveRoom()">
-      Leave Room
-    </ion-button>
+    <!-- Bottom (You) -->
+    <div class="bottom-player">
+      <div class="hand-cards">
+        <!-- your open cards -->
+      </div>
+      <div class="action-buttons">
+        <button (click)="jaiJinendra()">JaiJinendra</button>
+        <button (click)="playCard(selectedCard)">Play</button>
+        <button (click)="drawCard()">Draw</button>
+      </div>
+    </div>
+
   </div>
-</ion-content>
+</div>

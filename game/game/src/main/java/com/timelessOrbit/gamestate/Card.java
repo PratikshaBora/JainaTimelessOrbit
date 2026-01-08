@@ -5,7 +5,7 @@ public class Card {
 	public Aara aara;
     public Dwar dwar;
     public CardType type;
-    public String imageUrl; // ✅ new field
+    public String imageURL; // ✅ new field
     public int pointValue;
     
     public Card(Aara aara, Dwar dwar) {
@@ -20,7 +20,7 @@ public class Card {
             this.type = CardType.NORMAL;
         
      // ✅ Build image URL based on naming convention
-        this.imageUrl = "/assets/cards/" 
+        this.imageURL = "/assets/cards/" 
                         + aara.name().toLowerCase() 
                         + "_" 
                         + dwar.name().toLowerCase() 
@@ -49,8 +49,8 @@ public class Card {
 	public void setType(CardType type) {
 		this.type = type;
 	}
-	public String getImageUrl() {
-		return imageUrl;
+	public String getImageURL() {
+		return imageURL;
 	}
 	public void setPointValue() {
 		switch (dwar) {
@@ -70,6 +70,6 @@ public class Card {
 	}
 	@Override
     public String toString() {
-        return aara + " - " + dwar;
+        return aara + "_" + dwar;
     }
 }

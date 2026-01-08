@@ -4,77 +4,77 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Player {
-	static int id=1;
-	String username;
-	String password;
-	int points;
-	int roomId = -1; // -1 means not assigned to any room
-	
-	private List<Card> hand = new ArrayList<>();
+    private int id;
+    private String username;
+    private String mobileNumber;   // optional if you need it
+    private int points;
+    private int roomId;
+    private List<Card> hand;
+    private int handCount;
+    private boolean saidJaiJinendra;
+    
+    // --- Constructors ---
+    public Player() {
+    	this.points = 0;
+        this.hand = new ArrayList<>();
+        this.handCount = 0;
+        this.saidJaiJinendra = false;
+    }
+    public Player(int id, String username, int points, List<Card> hand) {
+        this.id = id;
+        this.username = username;
+        this.points = points;
+        this.hand = hand != null ? new ArrayList<>(hand) : new ArrayList<>();
+        this.handCount = this.hand.size();
+    }
 
-	boolean saidJaiJinendra = false;
-	
-	public void changeSaidJaiJinendra(boolean val) {
-		saidJaiJinendra = val;
-	}
-	
-	public Player() {
-		id++;
-	}
-	
-	public Player(String username, String password) {
-		super();
-		this.username = username;
-		this.password = password;
-	}
+    // --- Getters & Setters ---
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
 
-	public int getId() {
-		return id;
-	}
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
 
-	public String getUsername() {
-		return username;
-	}
+    public String getMobileNumber() { return mobileNumber; }
+    public void setMobileNumber(String mobileNumber) { this.mobileNumber = mobileNumber; }
 
-	public void setUsername(String username) {
-		this.username = username;
-	}
+    public int getPoints() { return points; }
+    public void setPoints(int points) { this.points = points; }
 
-	public String getPassword() {
-		return password;
-	}
+    public int getRoomId() { return roomId; }
+    public void setRoomId(int roomId) { this.roomId = roomId; }
 
-	public void setPassword(String password) {
-		this.password = password;
-	}
+    public List<Card> getHand() { return hand; }
+    public void setHand(List<Card> hand) {
+        this.hand = hand != null ? new ArrayList<>(hand) : new ArrayList<>();
+        this.handCount = this.hand.size();
+    }
 
-	public int getPoints() {
-		return points;
-	}
+    public int getHandCount() { return handCount; }
+    
+    // --- Hand management methods ---
+    /** Draw cards from draw pile */
+    public void drawCards(List<Card> cards) {
+        if (cards != null && !cards.isEmpty()) {
+            this.hand.addAll(cards);
+            this.handCount = this.hand.size(); // ✅ update count
+        }
+    }
 
-	public void setPoints(int points) {
-		this.points = points;
-	}
+    /** Discard a single card */
+    public void discardCard(Card card) {
+        if (card != null && this.hand.remove(card)) {
+            this.handCount = this.hand.size(); // ✅ update count
+        }
+    }
 
-	public int getRoomId() {
-		return roomId;
-	}
-
-	public void setRoomId(int roomId) {
-		this.roomId = roomId;
-	}
-
-	public List<Card> getHand() {
-		return hand;
-	}
-
-	public void setHand(List<Card> hand) {
-		this.hand = hand;
-	}
-
-	// cards in hand is remaining in toString
+    public boolean isSaidJaiJinendra() {	return saidJaiJinendra;	}
+    public void setSaidJaiJinendra(boolean value) {		this.saidJaiJinendra = value;	}
+    
 	@Override
-	public String toString() {
-		return "Player [username=" + username + ", password=" + password + ", points=" + points + "]";
-	}
+    public String toString() {
+        return "Player [id=" + id + ", username=" + username +
+               ", points=" + points + ", handCount=" + handCount +
+               ", hand=" + hand + "]";
+    }
 }

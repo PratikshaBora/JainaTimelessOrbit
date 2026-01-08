@@ -1,9 +1,9 @@
-import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { WebsocketService } from '../services/websocket.service';
-import { MessagePayload } from '../models/message-payload';
 import { PlayerService } from '../services/player.service';
-import { Card, GameRoomDTO, PlayerDTO } from '../models/game.models';
+import { MessagePayload } from '../models/message-payload';
+import { GameRoomDTO } from '../models/game.models';
 
 @Component({
   selector: 'app-lobby',
@@ -11,113 +11,61 @@ import { Card, GameRoomDTO, PlayerDTO } from '../models/game.models';
   styleUrls: ['./lobby.page.scss'],
   standalone: false
 })
-export class LobbyPage implements OnInit, OnDestroy {
-  currentRoomId!: number;   // non-null assertion
-  players: PlayerDTO[] = [];
-  discardPile: Card[] = [];
-  drawPile: Card[] = [];
-  currentView: string = 'lobby';
-  timeLeft: number = 120;
-  interval: any;
-  rooms$ = this.wsService.rooms$;
-  myPlayer?: PlayerDTO;
-  playersJoin:MessagePayload[] = [];
+export class LobbyPage implements OnInit {
+  playersJoin: MessagePayload[] = [];
+  currentUserName = '';
 
   constructor(
-    private router: Router,
     private wsService: WebsocketService,
-    private playerService : PlayerService
+    private playerService: PlayerService,
+    private router: Router
   ) {}
 
-  currentUserName: string = '';
-
   ngOnInit() {
-    const currentUser = this.playerService.getCurrentUser();
-    console.log(currentUser);
-    console.log("username : "+currentUser?.username);
+    console.log('LobbyPage initialized — subscribing to lobby updates');
 
+    const currentUser = this.playerService.getCurrentUser();
     if (!currentUser) {
       console.warn('No current user found, redirecting to login...');
       this.router.navigate(['/home']);
       return;
     }
+    this.currentUserName = currentUser.username;
 
-    this.wsService.connect(
-      () => {
-        console.log('joining lobby');
-        this.currentUserName = currentUser.username;   // ✅ store name
-        this.wsService.joinLobby(currentUser.username); // ✅ use real username
+    // ✅ Connect and auto‑join lobby
+    this.wsService.connect(() => {
+      const currentUser = this.playerService.getCurrentUser();
+      if (currentUser) {
+        this.wsService.joinLobby(currentUser);   // ✅ send full object
       }
-    );
+    });
+
+    this.wsService.playerJoined$.subscribe((player) => {
+      if (!player) return; // skip initial null
+
+      const currentUser = this.playerService.getCurrentUser();
+      if (currentUser && player.username === currentUser.username) {
+        this.playerService.setCurrentUser(player);
+      }
+    });
+
+    // ✅ Subscribe to lobby player list
     this.wsService.players$.subscribe((players: MessagePayload[]) => {
       this.playersJoin = players;
+      console.log('Lobby players updated:', this.playersJoin);
     });
-  }
 
-  selectedCard?: Card;
+    this.wsService.rooms$.subscribe((rooms: GameRoomDTO[]) => {
+      const newRoom = rooms[rooms.length - 1];
 
-  selectCard(card: Card) {
-    this.selectedCard = card;
-  }
-
-  playCard(card: Card) {
-    if (!this.currentRoomId) {
-      console.error('No room joined yet!');
-      return;
-    }
-
-    const message = {
-      action: 'PLAY_CARD',
-      card: card,
-      roomId: this.currentRoomId,
-      player: this.currentUserName
-    };
-    this.wsService.sendMessage(message);
-    this.selectedCard = undefined;
-  }
-
-  // Keyboard shortcut (desktop)
-  @HostListener('document:keydown.enter')
-  handleEnter() {
-    if (this.selectedCard) {
-      this.playCard(this.selectedCard);
-    }
-  }
-
-  leaveLobby() {
-    clearInterval(this.interval);
-    this.wsService.disconnect();
-    this.router.navigate(['/home']);
-  }
-
-  createRoom() {
-    console.log('Requesting backend to start game...');
-    this.wsService.startGame();   // ✅ no players array
-    this.router.navigate(['/room']);
-  }
-
-  joinRoom(roomId: number) {
-    this.currentRoomId = roomId;
-    this.wsService.subscribeToRoom(roomId, (room: GameRoomDTO) =>
-    {
-      this.players = room.players;
-      this.discardPile = room.discardPile;
-      this.drawPile = room.drawPile;
-      // Identify current player
-      this.myPlayer = room.players.find(p => p.username === this.currentUserName);
-      this.currentView = 'game'; // switch UI
+      // ✅ Only navigate if current user is in that room
+      if (newRoom.players.some(p => p.username === this.currentUserName))
+      {
+        console.log('Auto‑joining room', newRoom.roomId);
+        this.router.navigate(['/room', newRoom.roomId], {
+          state: { room: newRoom },
+        });
+      }
     });
-  }
-
-  playRoom() {
-
-  }
-  refreshLobby() {
-    this.wsService.requestLobbyStatus();
-  }
-
-  ngOnDestroy() {
-    clearInterval(this.interval);
-    this.wsService.disconnect();
   }
 }

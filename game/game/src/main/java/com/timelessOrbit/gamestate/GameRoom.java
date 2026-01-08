@@ -5,15 +5,30 @@ import java.util.Collections;
 import java.util.List;
 
 public class GameRoom {
-
 	private int id;
-	public List<Player> players = new ArrayList<>();
-	public List<Card> drawPile = new ArrayList<>();
-	public List<Card> discardPile = new ArrayList<>();
+	public List<Player> players;
+	public List<Card> drawPile;
+	public List<Card> discardPile;
 	private String currentAara;
-	public int currentPlayerIndex = 0;
-	public boolean clockwise = true;
-
+	public int currentPlayerIndex;
+	public boolean clockwise;
+	private GameEngine engine;
+	private GameRoomDTO gameDTO = null;
+	
+	public GameRoom() {
+		engine = new GameEngine(this);
+		players = new ArrayList<>();
+		drawPile = new ArrayList<>();
+		discardPile = new ArrayList<>();
+		currentPlayerIndex = 0;
+		clockwise = true;
+	}
+	public GameRoomDTO getGameDTO() {
+		return gameDTO;
+	}
+	public void setGameDTO(GameRoomDTO gameDTO) {
+		this.gameDTO = gameDTO;
+	}
 	public int getId() {
 		return id;
 	}
@@ -29,13 +44,17 @@ public class GameRoom {
 	public void prepare_card() {
 		for (Aara a : Aara.values()) {
 			for (Dwar d : Dwar.values()) {
-				if (d == Dwar.COLOR_CHANGE && (a == Aara.FIRST || a == Aara.THIRD || a == Aara.FIFTH))
+				if (d == Dwar.COLOR_CHANGE && (a == Aara.SECOND || a == Aara.FOURTH || a == Aara.SIXTH))
 					continue;
-				if (d == Dwar.COLOR_CHANGE_ADD4 && (a == Aara.SECOND || a == Aara.FOURTH || a == Aara.SIXTH))
+				if (d == Dwar.COLOR_CHANGE_ADD4 && (a == Aara.FIRST || a == Aara.THIRD || a == Aara.FIFTH))
 					continue;
 
 				drawPile.add(new Card(a, d));
 			}
+		}
+		int x=1;
+		for (Card card : drawPile) {
+			System.out.println(x++ +" : "+card);
 		}
 	}
 	public void distribute() {
@@ -48,6 +67,10 @@ public class GameRoom {
 			}
 		}
 		discardPile.add(drawPile.remove(0));
+		players.forEach(p -> {
+		    System.out.println("Cards in " + p.getUsername() + " hand : ");
+		    p.getHand().forEach(card -> System.out.println(card));
+		});
 	}
 	public void addPlayer(Player p) {
 		if (players.size() < 4) {
@@ -100,7 +123,6 @@ public class GameRoom {
 		return drawPile.isEmpty();
 	}
 	public boolean playCard(Player player, Card card) {
-		GameEngine engine = new GameEngine(this);
 		// Only allow if it's the player's turn
 		if (player != getCurrentPlayer()) {
 			return false;
@@ -156,6 +178,13 @@ public class GameRoom {
 	    dto.setCurrentPlayerId(this.players.get(currentPlayerIndex).getId());
 	    dto.setClockwise(this.clockwise);
 	    dto.setCurrentAara(this.currentAara);
+	    
 	    return dto;
+	}
+	@Override
+	public String toString() {
+		return "GameRoom [id=" + id + ", players=" + players + ", drawPile=" + drawPile + ", discardPile=" + discardPile
+				+ ", currentAara=" + currentAara + ", currentPlayerIndex=" + currentPlayerIndex + ", clockwise="
+				+ clockwise + "]";
 	}
 }

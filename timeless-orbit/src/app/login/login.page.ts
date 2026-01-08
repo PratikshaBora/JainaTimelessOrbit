@@ -4,7 +4,6 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { WebsocketService } from '../services/websocket.service';
 import { PlayerService } from '../services/player.service';
 import { MessagePayload } from '../models/message-payload';
-import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -13,7 +12,6 @@ import { AuthService } from '../services/auth.service';
   standalone: false
 })
 export class LoginPage implements OnInit {
-
   loginForm!: FormGroup;
   currentUser!: MessagePayload;
 
@@ -21,46 +19,39 @@ export class LoginPage implements OnInit {
     private formBuilder: FormBuilder,
     private router: Router,
     private websocketService: WebsocketService,
-    private playerService: PlayerService,
-    private authService: AuthService
+    private playerService: PlayerService
   ) {}
 
   ngOnInit() {
     this.loginForm = this.formBuilder.group({
       username: ['', [Validators.required, Validators.minLength(3)]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
+      // Strictly 10 digits, starting with 6-9
+      mobile_number: ['', [
+        Validators.required,
+        Validators.pattern("^[6-9][0-9]{9}$")
+      ]],
     });
   }
 
   onLogin() {
-   if (this.loginForm.valid) {
-    const { username, password } = this.loginForm.value;
+    if (this.loginForm.valid) {
+      const { username, mobile_number } = this.loginForm.value;
 
-    // Use PlayerService to add or get player
-    this.currentUser = this.playerService.addOrGetPlayer(username, password);
+      // 1. Create/Get the player object via Service
+      this.currentUser = this.playerService.addOrGetPlayer(username, mobile_number);
 
-    alert(`Welcome ${username}! 🎉`);
-    this.router.navigate(['/home']);
+      console.log(this.currentUser.username);
+      console.log(this.currentUser.mobile_number);
+      // 2. Notify the backend via WebSocket
+      // this.websocketService.joinLobby(username);
 
-    // Notify backend via WebSocket (avoid sending password ideally)
-    this.websocketService.joinLobby(username);
-  } else {
-  alert('Please enter valid credentials ❌');
-  }
-}
+      // 3. Navigate to Home and pass the complete player object
+      this.router.navigate(['/home'], {
+        state: { player: this.currentUser }
+      });
 
-  // Delegate score update to PlayerService
-  updateScore(username: string, points: number) {
-    this.playerService.updateScore(username, points);
-
-    this.websocketService.sendMessage({
-      type: 'UPDATE_SCORE',
-      payload: { username, score: points }
-    });
-  }
-
-  // Delegate leaderboard to PlayerService
-  getLeaderboard(): MessagePayload[] {
-    return this.playerService.getLeaderboard();
+    } else {
+      alert('Please enter a valid 10-digit mobile number ❌');
+    }
   }
 }

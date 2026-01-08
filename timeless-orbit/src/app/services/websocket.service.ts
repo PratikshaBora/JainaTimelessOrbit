@@ -1,48 +1,36 @@
 import { Injectable } from '@angular/core';
-import { Client } from '@stomp/stompjs';
-import * as SockJS from 'sockjs-client';
+import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 import { BehaviorSubject } from 'rxjs';
 import { MessagePayload } from '../models/message-payload';
-import { Card, GameRoomDTO } from '../models/game.models';
-import { IMessage } from '@stomp/stompjs';
-import {
-  PlayCardMessage,
-  DrawCardMessage,
-  PickDiscardMessage,
-  JaiJinendraMessage,
-  PenaltyMessage,
-  EndgameMessage,
-  DrawTwoMessage,
-  AaraChangeDrawFourMessage,
-  SkipTurnMessage,
-  ReverseTurnMessage,
-  AaraChangeMessage
-} from '../models/game-message';
+import { GameRoomDTO, Card } from '../models/game.models';
+import * as SockJS from 'sockjs-client';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class WebsocketService {
-
   private stompClient!: Client;
+  private connected: boolean = false;
 
-  // Subjects for reactive state
-  private roomSubject = new BehaviorSubject<GameRoomDTO | null>(null);
-  room$ = this.roomSubject.asObservable();
+  // Observables for lobby state
+  // ✅ Subject for playerJoined
+  private playerJoinedSubject = new BehaviorSubject<MessagePayload | null>(null);
+  playerJoined$ = this.playerJoinedSubject.asObservable();
 
   private playersSubject = new BehaviorSubject<MessagePayload[]>([]);
   players$ = this.playersSubject.asObservable();
 
-  private scoreboardSubject = new BehaviorSubject<any[]>([]);
-  scoreboard$ = this.scoreboardSubject.asObservable();
-
   private roomsSubject = new BehaviorSubject<any[]>([]);
   rooms$ = this.roomsSubject.asObservable();
 
-  constructor() {}
+  private scoreboardSubject = new BehaviorSubject<any>([]);
+  public scoreboard$ = this.scoreboardSubject.asObservable();
 
   // --- Connection setup ---
   connect(callback: Function | null = null) {
+    if (this.connected) {
+      if (callback) callback(); // already connected, run callback immediately
+      return;
+    }
+
     this.stompClient = new Client({
       webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
       reconnectDelay: 5000,
@@ -51,22 +39,25 @@ export class WebsocketService {
 
     this.stompClient.onConnect = () => {
       console.log('Connected to WebSocket');
+      this.connected = true;
 
-      // ✅ Subscribe to lobby updates (always a list of players)
+      this.stompClient.subscribe('/topic/playerJoined', (message) => {
+        const player: MessagePayload = JSON.parse(message.body);
+        this.playerJoinedSubject.next(player);
+      });
+      // ✅ Subscribe to lobby updates
       this.stompClient.subscribe('/topic/lobby', (message: IMessage) => {
         const backendPlayers = JSON.parse(message.body) as any[];
-
         const mappedPlayers: MessagePayload[] = backendPlayers.map(p => ({
-          id:Number(p.id),
+          id: Number(p.id),
           username: p.username,
-          score: p.points,
+          points: p.points,
           roomId: p.roomId,
-          // playerId: p.id,
         }));
         this.playersSubject.next(mappedPlayers);
       });
 
-      // ✅ Subscribe to game updates
+      // ✅ Subscribe to game updates (shared info)
       this.stompClient.subscribe('/topic/game', (message: IMessage) => {
         const update = JSON.parse(message.body);
         console.log('Game update:', update);
@@ -79,17 +70,11 @@ export class WebsocketService {
         this.scoreboardSubject.next(scores);
       });
 
-      // ✅ Subscribe to rooms
+      // ✅ Subscribe to rooms (room creation announcements)
       this.stompClient.subscribe('/topic/rooms', (message: IMessage) => {
         const room = JSON.parse(message.body);
         console.log('Room created:', room);
         this.roomsSubject.next([...this.roomsSubject.value, room]);
-      });
-
-      // Subscribe to room updates
-      this.stompClient.subscribe('/topic/game/${roomId}', (message: IMessage) => {
-        const room: GameRoomDTO = JSON.parse(message.body);
-        this.roomSubject.next(room);
       });
 
       // ✅ run callback only after connection is established
@@ -97,14 +82,8 @@ export class WebsocketService {
         callback();
       }
     };
-    this.stompClient.activate();
-  }
 
-  subscribeToRoom(roomId: number, callback: (room: GameRoomDTO) => void) {
-    this.stompClient.subscribe(`/topic/game/${roomId}`, (message: any) => {
-      const room: GameRoomDTO = JSON.parse(message.body);
-      callback(room);
-    });
+    this.stompClient.activate();
   }
 
   disconnect() {
@@ -113,111 +92,93 @@ export class WebsocketService {
     }
   }
 
-  // --- Lobby actions ---
-  joinLobby(username: string) {
-    console.log('joinLobby',username,this.stompClient?.connected);
-    if (this.stompClient?.connected) {
-      this.stompClient.publish({
-        destination: '/app/join', // ✅ matches @MessageMapping("/join")
-        body: JSON.stringify({ username }),
-      });
-    }
-  }
-
-  leaveLobby(playerId: number) {
-    if (this.stompClient?.connected) {
-      this.stompClient.publish({
-        destination: '/app/leaveLobby',
-        body: JSON.stringify({ id: playerId }),
-      });
-    }
-  }
-
-  requestLobbyStatus() {
-    if (this.stompClient?.connected) {
-      this.stompClient.publish({
-        destination: '/app/lobbyStatus',
-        body: '{}',
-      });
-    }
-  }
-  // --- Helper publish method ---
-  private publish(destination: string, body: any) {
-    if (this.stompClient?.connected) {
+  public sendMessage(message: any, destination: string = '/app/game'): void {
+    if (this.stompClient && this.stompClient.connected) {
       this.stompClient.publish({
         destination,
-        body: JSON.stringify(body),
-      });
-    }
-  }
-  // --- Game actions ---
-  playCard(roomId: number, playerId: number, card: Card) {
-    const payload: PlayCardMessage = { roomId, playerId, card };
-    this.publish('/app/playCard', payload);
-  }
-  drawCard(roomId: number, playerId: number) {
-    const payload: DrawCardMessage = { roomId, playerId };
-    this.publish('/app/drawCard', payload);
-  }
-  pickDiscard(roomId: number, playerId: number) {
-    const payload: PickDiscardMessage = { roomId, playerId };
-    this.publish('/app/pickDiscard', payload);
-  }
-  jaiJinendra(roomId: number, playerId: number) {
-    const payload: JaiJinendraMessage = { roomId, playerId };
-    this.publish('/app/jaiJinendra', payload);
-  }
-  autoPenaltyDraw(roomId: number, playerId: number) {
-    const payload: PenaltyMessage = { roomId, playerId, reason: 'timeout' };
-    this.publish('/app/penaltyDraw', payload);
-  }
-  jjTimeoutPenalty(roomId: number, playerId: number) {
-    const payload: PenaltyMessage = { roomId, playerId, reason: 'jjTimeout' };
-    this.publish('/app/jjPenalty', payload);
-  }
-  endgameResolution(roomId: number) {
-    const payload: EndgameMessage = { roomId };
-    this.publish('/app/endgame', payload);
-  }
-  drawTwo(roomId: number, playerId: number) {
-    const payload: DrawTwoMessage = { roomId, playerId };
-    this.publish('/app/drawTwo', payload);
-  }
-  aaraChangeDrawFour(roomId: number, playerId: number, chosenAara: string) {
-    const payload: AaraChangeDrawFourMessage = { roomId, playerId ,color : chosenAara};
-    this.publish('/app/colorChangeDrawFour', payload);
-  }
-  skipTurn(roomId: number, playerId: number) {
-    const payload: SkipTurnMessage = { roomId, playerId };
-    this.publish('/app/skipTurn', payload);
-  }
-  reverseTurn(roomId: number, playerId: number) {
-    const payload: ReverseTurnMessage = { roomId, playerId };
-    this.publish('/app/reverseTurn', payload);
-  }
-  aaraChange(roomId: number, playerId: number, chosenAara: string) {
-    const payload: AaraChangeMessage = { roomId, playerId, color: chosenAara };
-    this.publish('/app/aaraChange', payload);
-  }
-  startGame() {
-    if (this.stompClient?.connected) {
-      this.stompClient.publish({
-        destination: '/app/startGame',
-        body: ''   // ✅ no need to send players list
-      });
-    }
-  }
-  sendMessage(message: any) {
-  if (this.stompClient?.connected) {
-    this.stompClient.publish({
-        destination: '/app/play',
         body: JSON.stringify(message),
       });
+    } else {
+      console.error('WebSocket not connected, cannot send message');
     }
   }
-  subscribeToGame(callback: (state: any) => void) {
-    this.stompClient.subscribe('/topic/game', (message: any) => {
-      callback(JSON.parse(message.body));
+
+  // Generic subscribe helper
+  subscribe(destination: string, callback: (msg: any) => void): StompSubscription | undefined {
+    return this.stompClient?.subscribe(destination, callback);
+  }
+
+  // ✅ Room subscription (personalized updates)
+  subscribeToRoom(callback: (room: GameRoomDTO) => void) {
+    return this.stompClient.subscribe(`/user/queue/room`, message => {
+      const room: GameRoomDTO = JSON.parse(message.body);
+      callback(room);
+    });
+  }
+
+  // --- Lobby actions ---
+  joinLobby(player: MessagePayload) {
+    console.log('Publishing JOIN_LOBBY for', player);
+
+    if (this.stompClient?.connected) {
+      this.stompClient.publish({
+        destination: '/app/join',
+        body: JSON.stringify(player),   // ✅ send complete currentUser object
+      });
+    } else {
+      console.warn('STOMP not connected yet, cannot publish join');
+    }
+  }
+  requestLobbyStatus() {
+    this.stompClient?.publish({ destination: '/app/lobby/status' });
+  }
+
+  // --- Game actions ---
+  playCard(roomId: number, playerId: number, card: Card) {
+    this.stompClient?.publish({
+      destination: `/app/game/${roomId}/play`,
+      body: JSON.stringify({ playerId, card }),
+    });
+  }
+
+  drawCard(roomId: number, playerId: number) {
+    this.stompClient?.publish({
+      destination: `/app/game/${roomId}/draw`,
+      body: JSON.stringify({ playerId }),
+    });
+  }
+
+  pickDiscard(roomId: number, playerId: number) {
+    this.stompClient?.publish({
+      destination: `/app/game/${roomId}/pickDiscard`,
+      body: JSON.stringify({ playerId }),
+    });
+  }
+
+  jaiJinendra(roomId: number, playerId: number) {
+    this.stompClient?.publish({
+      destination: `/app/game/${roomId}/jaiJinendra`,
+      body: JSON.stringify({ playerId }),
+    });
+  }
+
+  autoPenaltyDraw(roomId: number, playerId: number) {
+    this.stompClient?.publish({
+      destination: `/app/game/${roomId}/autoPenaltyDraw`,
+      body: JSON.stringify({ playerId }),
+    });
+  }
+
+  jjTimeoutPenalty(roomId: number, playerId: number) {
+    this.stompClient?.publish({
+      destination: `/app/game/${roomId}/jjTimeoutPenalty`,
+      body: JSON.stringify({ playerId }),
+    });
+  }
+  onPlayerJoined(callback: (player: MessagePayload) => void) {
+    this.stompClient.subscribe('/topic/playerJoined', message => {
+      const player: MessagePayload = JSON.parse(message.body);
+      callback(player);
     });
   }
 }

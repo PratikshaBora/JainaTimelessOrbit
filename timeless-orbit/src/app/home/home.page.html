@@ -1,24 +1,103 @@
-<h1 class="game-title">TIMELESS ORBIT</h1>
+<ion-content [fullscreen]="true" class="divine-background">
+  <div class="main-wrapper">
 
-<div class="home-container">
-  <!-- 🏆 Leaderboard -->
-  <div class="leaderboard-container">
-    <h2>Leaderboard</h2>
-    <ol>
-      <li *ngFor="let player of leaderboard">
-        {{ player.username }} - {{ player.score || 0 }} points
-      </li>
-    </ol>
+    <header class="main-header">
+      <div class="sun-icon"><ion-icon name="sunny"></ion-icon></div>
+      <h1 class="game-title">TIMELESS ORBIT</h1>
+      <div class="sun-icon"><ion-icon name="sunny"></ion-icon></div>
+    </header>
+
+    <div class="dashboard-row">
+      <div class="dash-column">
+        <div class="dash-card explorer-card" *ngIf="currentUser">
+          <span class="label">EXPLORER</span>
+          <h2 class="val-name">{{ currentUser.username }}</h2>
+          <p class="val-sub">{{ currentUser.mobile_number }}</p>
+        </div>
+      </div>
+
+      <div class="dash-column action-col">
+        <button class="vibrant-gateway" (click)="startGame()">
+          <span class="btn-top">START</span>
+          <span class="btn-mid">JOURNEY</span>
+          <ion-icon name="play-circle"></ion-icon>
+        </button>
+      </div>
+
+      <div class="dash-column">
+        <div class="dash-card score-card">
+          <span class="label">TOP SCORE</span>
+          <div class="top-player" *ngIf="leaderboard.length > 0">
+            <h2 class="val-name">{{ leaderboard[0].points }}</h2>
+            <p class="val-sub">{{ leaderboard[0].username }}</p>
+          </div>
+          <div class="top-player" *ngIf="leaderboard.length === 0">
+            <h2 class="val-name">0</h2>
+            <p class="val-sub">Be the first!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <section class="divine-lore-card">
+        <h2 class="lore-title">🌀 WHAT IS TIMELESS ORBIT?</h2>
+
+        <div class="detailed-lore">
+          <p class="lore-intro">
+            The <strong>Kalchakra</strong> (Timeless Orbit) is an infinite cycle of time, visualized as a rotating wheel with two distinct halves. It has been rotating since time immemorial and will continue for an infinite future.
+          </p>
+
+          <div class="era-split">
+            <div class="era-box avasarpini">
+              <h3>AVASARPINI</h3>
+              <p class="era-type">The Descending Era</p>
+              <p class="era-desc">Like a wheel moving downwards, human strength, physical height, and happiness gradually decrease.</p>
+              <div class="era-stat">10 Croda-Crodi Sagaro-pam</div>
+            </div>
+
+            <div class="era-box utsarpini">
+              <h3>UTSARPINI</h3>
+              <p class="era-type">The Ascending Era</p>
+              <p class="era-desc">Like a wheel moving upwards, human strength, physical height, and happiness gradually increase!</p>
+              <div class="era-stat">10 Croda-Crodi Sagaro-pam</div>
+            </div>
+          </div>
+
+          <div class="factors-section">
+            <h4 class="factors-title">🌈 THE 10 FACTORS OF CHANGE</h4>
+            <p class="factors-subtitle">As the Orbit rotates, these things change for everyone:</p>
+            <div class="factors-grid">
+              <div class="factor-pill"><span>1</span> Name & Status of Ara</div>
+              <div class="factor-pill"><span>2</span> Human Condition</div>
+              <div class="factor-pill"><span>3</span> Body Height</div>
+              <div class="factor-pill"><span>4</span> Ribs in Body</div>
+              <div class="factor-pill"><span>5</span> Food Consumption</div>
+              <div class="factor-pill"><span>6</span> Residence</div>
+              <div class="factor-pill"><span>7</span> Soil Taste</div>
+              <div class="factor-pill"><span>8</span> Environment</div>
+              <div class="factor-pill"><span>9</span> Future Gati</div>
+              <div class="factor-pill"><span>10</span> Life Span</div>
+            </div>
+          </div>
+
+          <div class="final-details">
+            <div class="detail-row">
+              <span class="d-label">Total Cycle Duration:</span>
+              <span class="d-val">20 Croda-Crodi Sagaro-pam</span>
+            </div>
+            <div class="detail-row">
+              <span class="d-label">Total Aras:</span>
+              <span class="d-val">12 Epochs (6 per Era)</span>
+            </div>
+            <div class="detail-row">
+              <span class="d-label">Active Regions:</span>
+              <span class="d-val">Bharat & Airavat (Madhya-lok)</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
   </div>
-
-  <!-- 🎮 Game Start -->
-  <div class="game-container">
-    <ion-button expand="block" size="large" color="primary" (click)="startGame()">
-      Ready to play Game
-    </ion-button>
-
-    <p class="player-position">
-      Current Position: <strong>{{ currentPosition }}</strong>
-    </p>
-  </div>
-</div>
+</ion-content>

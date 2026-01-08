@@ -2,6 +2,7 @@ package com.timelessOrbit.gamestate;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,30 +17,48 @@ public class GameState {
 	SimpMessagingTemplate messagingTemplate;
 	List<Player> waitingPlayers = new ArrayList<Player>();
 	List<GameRoom> gameRooms = new ArrayList<GameRoom>();
+	private int nextPlayerId = 1; // global counter
 	
 	private List<PlayerScore> pastScores = new ArrayList<>();
 	
 	long firstPlayerJoinTime = 0;
 	private final long timeoutMillis = 2 * 60 * 1000; // configurable later
 	
-	//When a player joins, they go into waitingPlayers.
+	// When a player joins, they go into waitingPlayers.
 	public void addPlayer(Player p) {
-		System.out.println("-------GameState instance: " + this.hashCode()+"------------");
-		waitingPlayers.add(p);
-	    System.out.println(waitingPlayers);
-	    System.out.println("No of waiting players : "+waitingPlayers.size());
-	    
-		// We need to track when the first player entered the queue.
+	    System.out.println("player info received from frontend: " + p);
+
+	    // ✅ Create backend Player with assigned ID
+	    Player player = new Player();
+	    player.setId(nextPlayerId++);
+	    player.setUsername(p.getUsername());
+	    player.setMobileNumber(p.getMobileNumber());
+	    System.out.println("Populated player with id : " + player);
+
+	    waitingPlayers.add(player);
+	    System.out.println("No of waiting players : " + waitingPlayers.size());
+
+	    // ✅ Convert to DTO
+	    PlayerDTO dto = new PlayerDTO(
+	        player.getId(),
+	        player.getUsername(),
+	        player.getPoints(),
+	        new ArrayList<>(player.getHand()) // defensive copy
+	    );
+
+	    // ✅ Broadcast to frontend
+	    messagingTemplate.convertAndSend("/topic/playerJoined", dto);
+
+	    // ✅ Track when the first player entered the queue
 	    if (waitingPlayers.size() == 1) {
-		    firstPlayerJoinTime = System.currentTimeMillis();
-		}
-	}
-	
+	        firstPlayerJoinTime = System.currentTimeMillis();
+	    }
+	}	
 	// ✅ run every 30- seconds
     @Scheduled(fixedRate = 30000)
     public void scheduledRoomCheck() {
 //    	System.out.println("-------GameState instance: " + this.hashCode()+"------------");
-    	System.out.println("inside scheduled"+waitingPlayers.size());
+    	System.out.println("inside scheduled : "+waitingPlayers.size());
         checkRoom();   // call your existing method
     }
 
@@ -64,84 +83,100 @@ public class GameState {
             }
         }
     }
-	public void createRoom(int count) {
-	    GameRoom room = new GameRoom();
-	    room.players = new ArrayList<>();
-	    room.discardPile = new ArrayList<>();
-	    
-	    int roomId = gameRooms.size(); // simple auto-increment
-	    room.setId(roomId);
-
-	    for (int i = 0; i < count; i++) {
-	    	if (!waitingPlayers.isEmpty()) {
-	    	    Player p = waitingPlayers.remove(0);
-	    	    p.setRoomId(roomId);		// assign room number
-		        room.players.add(p);
-	    	}
-	    }
-	    room.prepare_card();
-	    room.distribute();
-	    gameRooms.add(room);
-
-	    System.out.println("✅ GameRoom " + roomId + " created with " + count + " players");
-	    
-//	    // NEW: broadcast room creation
-//	    messagingTemplate.convertAndSend("/topic/rooms", room);
-//	    // ✅ Broadcast game start
-//	    messagingTemplate.convertAndSend("/topic/game", room);
-	    
-	    // 👉 Convert to DTO and broadcast here
-	    GameRoomDTO dto = convertToDTO(room);
-	    messagingTemplate.convertAndSend("/topic/game/" + roomId, dto);
-	    
-	    // Reset timer if queue still has players
-	    if (!waitingPlayers.isEmpty()) {
-	        firstPlayerJoinTime = System.currentTimeMillis();
-	    }
-	}	
 	
-	private GameRoomDTO convertToDTO(GameRoom room) {
-		GameRoomDTO dto = new GameRoomDTO();
-	    dto.setRoomId(room.getId());
+    public void createRoom(int count) {
+        GameRoom room = new GameRoom();
+        int roomId = gameRooms.size(); // simple auto-increment
+        room.setId(roomId);
 
-	    List<PlayerDTO> playerDTOs = room.players.stream()
-	        .map(p -> new PlayerDTO(p.getUsername(), p.getPoints(), p.getHand()))
-	        .toList();
+        // Assign players from waiting list
+        for (int i = 0; i < count; i++) {
+            if (!waitingPlayers.isEmpty()) {
+                Player p = waitingPlayers.remove(0);
+                p.setRoomId(roomId);          // assign room number
+//                p.setId(nextPlayerId++);      // assign unique player ID
+                room.players.add(p);
+            }
+        }
 
-	    dto.setPlayers(playerDTOs);
-	    dto.setDiscardPile(room.discardPile);
-	    dto.setDrawPile(room.drawPile);
+        // Prepare and distribute cards
+        room.prepare_card();
+        room.distribute();
+        gameRooms.add(room);
 
-	    return dto;
-	}
+        System.out.println("✅ GameRoom " + roomId + " created with " + count + " players");
 
-	// New overload: create a room from a specific list of players
-	public GameRoom createRoom(List<Player> selectedPlayers) {
-	    GameRoom room = new GameRoom();
-	    room.players = new ArrayList<>();
-	    room.discardPile = new ArrayList<>();
+        // --- Shared broadcast: announce room creation ---
+        GameRoomDTO dto = convertToDTO(room);
+        room.setGameDTO(dto);
+        messagingTemplate.convertAndSend("/topic/rooms", dto);
 
-	    int roomId = gameRooms.size(); // auto-increment
-	    room.setId(roomId);
+        System.out.println(dto);
 
-	    for (Player p : selectedPlayers) {
-	        // remove from waiting list if present
-	        waitingPlayers.removeIf(wp -> wp.getId() == p.getId());
-	        p.setRoomId(roomId);
-	        room.getPlayers().add(p);
+        // If players are still waiting, reset join time
+        if (!waitingPlayers.isEmpty()) {
+            firstPlayerJoinTime = System.currentTimeMillis();
+        }
+    }
+	
+    private GameRoomDTO convertToDTO(GameRoom room) {
+        GameRoomDTO dto = new GameRoomDTO();
+        dto.setRoomId(room.getId());
+
+        // Convert each Player to PlayerDTO
+        List<PlayerDTO> playerDTOs = room.players.stream()
+            .map(p -> {
+            	return new PlayerDTO(p.getId(), p.getUsername(), p.getPoints(), new ArrayList<>(p.getHand()));
+            })
+            .toList();
+
+        dto.setPlayers(playerDTOs);
+        dto.setDiscardPile(new ArrayList<>(room.discardPile));
+        dto.setDrawPile(new ArrayList<>(room.drawPile));
+
+        // ✅ Add turn info
+        dto.setCurrentPlayerId(room.getCurrentPlayer().getId());
+        dto.setClockwise(room.clockwise);
+        dto.setCurrentAara(room.getCurrentAara());
+
+        // ✅ Reset timer at start of each turn
+        dto.setTurnTimeLeft(60);
+
+        return dto;
+    }
+
+	public GameRoomDTO filterForPlayer(GameRoomDTO room, int requestingPlayerId) {
+	    GameRoomDTO filtered = new GameRoomDTO();
+	    filtered.setRoomId(room.getRoomId());
+	    filtered.setDrawPile(room.getDrawPile());
+	    filtered.setDiscardPile(room.getDiscardPile());
+	    filtered.setCurrentPlayerId(room.getCurrentPlayerId());
+	    filtered.setClockwise(room.isClockwise());
+	    filtered.setCurrentAara(room.getCurrentAara());
+	    filtered.setTurnTimeLeft(room.getTurnTimeLeft());
+
+	    System.out.println("List of players in room :\n"+room.getPlayers());
+	    
+	    List<PlayerDTO> filteredPlayers = new ArrayList<>();
+	    for (PlayerDTO p : room.getPlayers()) {
+	        PlayerDTO copy = new PlayerDTO();
+	        copy.setId(p.getId());
+	        copy.setUsername(p.getUsername());
+	        copy.setPoints(p.getPoints());
+
+	        if (p.getId() == requestingPlayerId) {
+	            // ✅ Send full hand only to this player
+	            copy.setHand(p.getHand());
+	        } else {
+	            // ✅ Hide other players' cards
+	            copy.setHand(Collections.emptyList());
+	        }
+	        copy.setHandCount(p.getHand() != null ? p.getHand().size() : 0);
+
+	        filteredPlayers.add(copy);
 	    }
-
-	    room.prepare_card();   // or rename to prepareCards()
-	    room.distribute();     // or rename to distributeCards()
-
-	    gameRooms.add(room);
-
-	    System.out.println("✅ GameRoom " + roomId + " created with " + selectedPlayers.size() + " players");
-
-	    if (!waitingPlayers.isEmpty()) {
-	        firstPlayerJoinTime = System.currentTimeMillis();
-	    }
-	    return room;
+	    filtered.setPlayers(filteredPlayers);
+	    return filtered;
 	}
 	
 	public Player getCurrentPlayer(int roomId) {

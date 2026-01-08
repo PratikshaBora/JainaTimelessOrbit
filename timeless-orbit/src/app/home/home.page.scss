@@ -1,69 +1,106 @@
-/* Full-page layout */
-body, html {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  background: radial-gradient(circle at top, #0f0f0f, #1a1a1a); /* cosmic black gradient */
-  font-family: 'Segoe UI', sans-serif;
-  color: #fff;
+:host {
+  --divine-gold: #B8860B;
+  --vivid-saffron: #FF8C00;
+  --deep-maroon: #800000;
+  --bright-gold: #FFD700;
+  --bg-white: #ffffff;
 }
 
-/* Title styling */
-.game-title {
+.divine-background { --background: radial-gradient(circle at center, #ffffff 0%, #FFF9E6 100%); }
+
+.main-wrapper { padding: 15px; display: flex; flex-direction: column; gap: 15px; }
+
+/* Header */
+.main-header {
+  display: flex; justify-content: center; align-items: center; gap: 10px;
+  .game-title { font-size: 1.8rem; font-weight: 900; color: var(--deep-maroon); letter-spacing: 2px; }
+  .sun-icon { font-size: 2.2rem; color: var(--vivid-saffron); }
+}
+
+/* 🧩 The 3-Column Dashboard Row */
+.dashboard-row { display: flex; gap: 10px; height: 140px; }
+.dash-column { flex: 1; display: flex; }
+
+.dash-card {
+  width: 100%; background: var(--bg-white); border: 3px solid var(--bright-gold);
+  border-radius: 18px; padding: 10px; text-align: center;
+  display: flex; flex-direction: column; justify-content: center;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.1);
+
+  .label { font-size: 0.7rem; font-weight: 800; color: var(--divine-gold); }
+  .val-name { font-size: 1.3rem; color: var(--deep-maroon); font-weight: 900; margin: 5px 0; }
+  .val-sub { font-size: 0.8rem; color: var(--vivid-saffron); font-weight: 700; }
+}
+
+/* 🚀 Gateway Button */
+.vibrant-gateway {
+  width: 100%; background: linear-gradient(135deg, var(--vivid-saffron) 0%, #FFA500 100%);
+  border: none; border-radius: 18px; color: white; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(255, 140, 0, 0.3);
+  .btn-top { font-size: 0.8rem; font-weight: 700; }
+  .btn-mid { font-size: 1.2rem; font-weight: 900; }
+  ion-icon { font-size: 2.5rem; margin-top: 5px; }
+}
+
+/* 🌀 Full Lore Section */
+.divine-lore-card {
+  background: var(--bg-white); border: 3px solid var(--bright-gold);
+  border-radius: 25px; padding: 20px; color: var(--deep-maroon);
+
+  .lore-title { font-size: 1.5rem; font-weight: 900; text-align: center; margin-bottom: 20px; }
+  .lore-intro { font-size: 1.1rem; line-height: 1.5; text-align: center; font-weight: 600; margin-bottom: 25px; }
+}
+
+.era-split {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 25px;
+  .era-box {
+    padding: 15px; border-radius: 15px; text-align: center;
+    h3 { margin: 0; font-size: 1.1rem; font-weight: 900; }
+    .era-type { font-weight: 800; font-size: 0.8rem; margin: 4px 0; }
+    .era-desc { font-size: 0.9rem; font-weight: 600; color: #444; }
+    .era-stat { font-size: 0.75rem; font-weight: 800; color: var(--divine-gold); margin-top: 8px; }
+  }
+  .avasarpini { background: #FFF0F0; h3, .era-type { color: #D32F2F; } }
+  .utsarpini { background: #F0FFF0; h3, .era-type { color: #2E7D32; } }
+}
+
+.factors-section {
   text-align: center;
-  font-size: 2.5rem;
-  margin-top: 2rem;
-  color: #00ffe0;
-  text-shadow: 0 0 10px #00ffe0;
+  .factors-title { font-size: 1.3rem; font-weight: 900; color: var(--vivid-saffron); margin-bottom: 5px; }
+  .factors-subtitle { font-weight: 700; font-size: 1rem; color: #666; margin-bottom: 15px; }
+  .factors-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    .factor-pill {
+      background: #FFFBE6; border: 1px solid var(--bright-gold); padding: 10px;
+      border-radius: 10px; font-size: 0.9rem; font-weight: 800; display: flex; align-items: center; gap: 8px;
+      span { background: var(--vivid-saffron); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
+    }
+  }
 }
 
-/* Main container */
-.home-container {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-  align-items: flex-start;
-  padding: 2rem;
-  height: calc(100% - 6rem); /* subtract title height */
-  box-sizing: border-box;
+.final-details {
+  margin-top: 30px; padding-top: 15px; border-top: 2px dashed var(--bright-gold);
+  .detail-row {
+    display: flex; justify-content: space-between; padding: 5px 0; font-weight: 700;
+    .d-label { color: var(--divine-gold); }
+    .d-val { color: var(--deep-maroon); font-weight: 800; }
+  }
 }
+/* Add this to your SCSS to guarantee mobile perfection */
+@media (max-width: 480px) {
+  .dashboard-row {
+    height: auto; // Let it grow if text is long
+    gap: 8px;     // Tighten space between boxes
+  }
 
-/* Card-style containers */
-.leaderboard-container,
-.game-container {
-  flex: 1;
-  margin: 1rem;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 0 20px rgba(0, 255, 224, 0.3);
-  backdrop-filter: blur(10px);
-}
+  .dash-card {
+    padding: 8px 4px; // Smaller padding to save space
+    .val-name { font-size: 1.1rem; } // Slightly smaller font so it fits
+    .label { font-size: 0.65rem; }
+  }
 
-/* Leaderboard styling */
-.leaderboard-container h2 {
-  text-align: center;
-  font-size: 1.8rem;
-  margin-bottom: 1rem;
-  color: #00ffe0;
-}
-
-.leaderboard-container ol {
-  padding-left: 1.5rem;
-  font-size: 1.2rem;
-  line-height: 2;
-}
-
-/* Game container styling */
-.game-container ion-button {
-  font-size: 1.3rem;
-  margin-bottom: 2rem;
-  --background: #00ffe0;
-  --color: #000;
-  box-shadow: 0 0 10px #00ffe0;
-}
-
-.player-position {
-  font-size: 1.3rem;
-  color: #ffffff;
+  .vibrant-gateway {
+    .btn-mid { font-size: 1rem; }
+    ion-icon { font-size: 2rem; }
+  }
 }

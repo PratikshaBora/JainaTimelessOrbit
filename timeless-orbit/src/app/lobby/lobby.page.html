@@ -1,98 +1,92 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>Game Lobby</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content [fullscreen]="true" class="divine-background">
+  <div class="main-wrapper">
 
-<ion-content class="ion-padding dark-theme" [fullscreen]="true">
+    <header class="main-header">
+      <div class="sun-icon"><ion-icon name="sunny"></ion-icon></div>
+      <h1 class="game-title">TIMELESS ORBIT</h1>
+      <div class="sun-icon"><ion-icon name="sunny"></ion-icon></div>
+    </header>
 
-  <!-- ✅ Lobby View -->
-  <div *ngIf="currentView === 'lobby'">
-    <h2>Welcome, {{ currentUserName }} 👋</h2>
-    <p>Waiting for players...</p>
-    <p>Time left: {{ timeLeft }} seconds</p>
+    <div class="dashboard-row">
+      <div class="dash-column">
+        <div class="dash-card">
+          <span class="label">EXPLORER</span>
+          <h2 class="val-name">{{ currentUserName }}</h2>
+          <p class="val-sub">Lobby Active</p>
+        </div>
+      </div>
 
-    <h2>Available Rooms</h2>
-    <div *ngFor="let room of rooms$ | async">
-      Room {{ room.id }} with {{ room.players.length }} players
-      <ion-button size="small" fill="outline" color="primary" (click)="joinRoom(room.id)">
-        Join
-      </ion-button>
+      <div class="dash-column">
+        <div class="dash-card">
+          <span class="label">MATCHMAKING</span>
+          <div class="status-container">
+            <ion-spinner name="crescent" class="divine-spinner"></ion-spinner>
+          </div>
+          <p class="val-sub">FINDING PLAYERS</p>
+        </div>
+      </div>
+
+      <div class="dash-column">
+        <div class="dash-card">
+          <span class="label">READY</span>
+          <h2 class="val-name">{{ playersJoin.length }} / 4</h2>
+          <p class="val-sub">MIN 2 TO START</p>
+        </div>
+      </div>
     </div>
 
-    <ion-list>
-      <ion-item *ngFor="let player of players">
-        <ion-label>
-          <strong>{{ player.username }}</strong>
-          <p>Score: {{ player.points || 0 }}</p>
-        </ion-label>
-      </ion-item>
-    </ion-list>
+    <div class="split-container">
 
-    <div class="button-row">
-      <ion-button size="small" fill="outline" color="medium" (click)="refreshLobby()">
-        Refresh
-      </ion-button>
-      <ion-button size="small" fill="solid" color="danger" (click)="leaveLobby()">
-        Leave
-      </ion-button>
-    </div>
-  </div>
+      <aside class="sidebar-entrants">
+        <section class="divine-lore-card height-fill">
+          <h2 class="side-title">🌀 LOBBY</h2>
+          <div class="player-stack">
+            <div class="p-row" *ngFor="let player of playersJoin">
+              <ion-icon name="person-circle" class="p-icon"></ion-icon>
+              <div class="p-text">
+                <span class="p-name">{{ player.username }}</span>
+                <span class="p-status">READY</span>
+              </div>
+            </div>
+            <div class="p-row empty" *ngFor="let i of [1,2,3,4].slice(playersJoin.length)">
+              <ion-icon name="hourglass-outline" class="p-icon"></ion-icon>
+              <span class="p-name">Waiting...</span>
+            </div>
+          </div>
+        </section>
+      </aside>
 
-  <!-- ✅ Game Board View -->
-  <div *ngIf="currentView === 'game'">
-    <h2>Game Started!</h2>
+      <main class="main-rules">
+        <section class="divine-lore-card height-fill">
+          <h2 class="lore-title-large">📜 HOW TO PLAY</h2>
 
-    <!-- Show each player -->
-    <ion-list>
-      <ion-item *ngFor="let player of players">
-        <ion-label>
-          <strong>{{ player.username }}</strong>
-          <p>Score: {{ player.points}}</p>
-        </ion-label>
-      </ion-item>
-    </ion-list>
+          <div class="rules-grid-large">
+            <div class="rule-item-large">
+              <div class="rule-bullet"><ion-icon name="copy"></ion-icon></div>
+              <p>Every explorer starts with <strong>5 Divine Cards</strong> in their hand.</p>
+            </div>
+            <div class="rule-item-large">
+              <div class="rule-bullet"><ion-icon name="git-compare"></ion-icon></div>
+              <p>Match your card with the <strong>Ara (Epoch)</strong> or <strong>Color</strong> of the center pile.</p>
+            </div>
+            <div class="rule-item-large">
+              <div class="rule-bullet"><ion-icon name="megaphone"></ion-icon></div>
+              <p>When you have only <strong>1 Card left</strong>, shout <strong>"Jai Jinendra"</strong> to win!</p>
+            </div>
+          </div>
 
-    <!-- Show current player's hand -->
-    <h3>Your Cards</h3>
-    <div class="card-row">
-      <img
-        *ngFor="let card of myPlayer?.hand"
-        [src]="card.imageURL"
-        alt="{{card.aara}} {{card.dwar}}"
-        class="card-img"
-        [class.selected]="selectedCard === card"
-        (click)="selectCard(card)"
-        (dblclick)="playCard(card)"
-      >
-    </div>
-    <!-- Optional global Play button for mobile -->
-    <ion-button *ngIf="selectedCard"
-            color="primary"
-            (click)="playCard(selectedCard)">
-      Play Selected Card
-    </ion-button>
-    <!-- ✅ Draw Pile -->
-    <h3>Draw Pile</h3>
-    <div class="card-row">
-      <img
-        *ngFor="let card of drawPile"
-        [src]="card.imageURL"
-        alt="{{card.aara}} {{card.dwar}}"
-        class="card-img deal"
-      >
-    </div>
-    <!-- Show discard pile -->
-    <h3>Discard Pile</h3>
-    <div class="card-row">
-      <img
-        *ngFor="let card of discardPile"
-        [src]="card.imageURL"
-        alt="discard card"
-        class="card-img"
-      >
+          <div class="action-guide-large">
+            <h4 class="action-header-large">✨ DIVINE ACTION CARDS</h4>
+            <div class="action-grid-large">
+              <div class="a-pill skip"><strong>SKIP:</strong> Stops the next player's turn</div>
+              <div class="a-pill reverse"><strong>REVERSE:</strong> Flips the direction of play</div>
+              <div class="a-pill draw2"><strong>DRAW +2:</strong> Next player takes 2 cards</div>
+              <div class="a-pill wild"><strong>WILD:</strong> Change the current Ara Era</div>
+            </div>
+          </div>
+        </section>
+      </main>
+
     </div>
   </div>
-
 </ion-content>
-<div class="notification reverse">🔄 Turn order reversed!</div>

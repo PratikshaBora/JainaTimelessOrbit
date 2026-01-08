@@ -94,11 +94,11 @@ public class GameEngine {
                 applyAction(drawn);
             }
         }
-        if (player.getHand().size() == 1 && !player.saidJaiJinendra) {
+        if (player.getHand().size() == 1 && !player.isSaidJaiJinendra()) {
             player.getHand().add(draw(1).get(0));
         }
         if (player.getHand().isEmpty()) {
-            System.out.println(player.username + " wins!");
+            System.out.println(player.getUsername() + " wins!");
         }
         nextPlayer();
     }

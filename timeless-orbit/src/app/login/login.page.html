@@ -1,83 +1,66 @@
-<!-- <ion-header>
-  <ion-toolbar>
+<ion-header class="ion-no-border">
+  <ion-toolbar class="divine-toolbar">
     <ion-title class="game-title">TIMELESS ORBIT</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
-  <div class="login-container">
-    <h2>Login</h2>
+<ion-content [fullscreen]="true" class="divine-background">
+  <ion-grid class="full-height">
+    <ion-row class="ion-justify-content-center ion-align-items-center">
+      <ion-col size="12" size-md="6" size-lg="4">
 
-    <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
-      <ion-item>
-        <ion-label position="floating">Username</ion-label>
-        <ion-input
-          type="text"
-          formControlName="username"
-          placeholder="Enter your username">
-        </ion-input>
-      </ion-item>
-      <ion-text color="danger" *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched">
-        <small>Username must be at least 3 characters</small>
-      </ion-text>
+        <div class="welcome-header">
+          <div class="divine-icon">
+             <ion-icon name="sunny"></ion-icon>
+          </div>
+          <h1>Jai Jinendra</h1>
+          <p>Begin your journey through the 12 Aras</p>
+        </div>
 
-      <ion-item>
-        <ion-label position="floating">Password</ion-label>
-        <ion-input
-          type="password"
-          formControlName="password"
-          placeholder="Enter your password">
-        </ion-input>
-      </ion-item>
-      <ion-text color="danger" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
-        <small>Password must be at least 6 characters</small>
-      </ion-text>
+        <div class="glass-card login-card">
+          <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
 
-      <ion-button expand="block" type="submit" [disabled]="loginForm.invalid">
-        Login
-      </ion-button>
-    </form>
-  </div>
-</ion-content> -->
+            <div class="input-group">
+              <label>
+                <ion-icon name="person"></ion-icon>
+                Player Name
+              </label>
+              <input
+                type="text"
+                formControlName="username"
+                placeholder="Enter your name"
+                class="divine-input"
+              />
+            </div>
 
-<ion-header>
-  <ion-toolbar>
-    <ion-title class="game-title">TIMELESS ORBIT</ion-title>
-  </ion-toolbar>
-</ion-header>
+            <div class="input-group">
+              <label>
+                <ion-icon name="call"></ion-icon>
+                Mobile Number
+              </label>
+              <input
+                type="tel"
+                formControlName="mobile_number"
+                placeholder="10-digit number"
+                maxlength="10"
+                class="divine-input"
+              />
+              <div class="error-text" *ngIf="loginForm.get('mobile_number')?.invalid && loginForm.get('mobile_number')?.touched">
+                Please enter a valid 10-digit number
+              </div>
+            </div>
 
-<ion-content>
-  <div class="login-container">
-    <h2>Login</h2>
+            <button type="submit" class="vibrant-button" [disabled]="loginForm.invalid">
+              START JOURNEY
+            </button>
+          </form>
+        </div>
 
-    <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
-      <div class="form-row">
-        <label for="username">Username:</label>
-        <input
-          type="text"
-          id="username"
-          formControlName="username"
-          placeholder="Enter your username"
-        />
-      </div>
-      <div class="error" *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched">
-        Username must be at least 3 characters
-      </div>
+        <div class="kalchakra-info-brief">
+          <p>Total Cycle: 20 Croda-Crodi Sagaro-pam</p>
+        </div>
 
-      <div class="form-row">
-        <label for="password">Password:</label>
-        <input
-          type="password"
-          id="password"
-          formControlName="password"
-          placeholder="Enter your password"
-        />
-      </div>
-      <div class="error" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
-        Password must be at least 6 characters
-      </div>
-
-      <button type="submit" [disabled]="loginForm.invalid">Login</button>
-    </form>
-  </div>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
 </ion-content>

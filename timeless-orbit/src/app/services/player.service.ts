@@ -15,44 +15,50 @@ export class PlayerService {
     this.wsService.players$.subscribe(players => {
       this.players = players;
     });
+
   }
 
-  addOrGetPlayer(username: string, password?: string): MessagePayload {
-    let existingPlayer = this.players.find(p => p.username === username);
+  addOrGetPlayer(username: string, mobile_number: string): MessagePayload {
+  let existingPlayer = this.players.find(p => p.username === username);
 
-    if (!existingPlayer) {
-      existingPlayer = {
-        id: this.nextId++,   // ✅ auto-increment id
-        username,
-        password,         // optional
-        score: 0          // initialize score
-      };
+  if (!existingPlayer) {
+    // ✅ Do not assign id here — wait for backend
+    existingPlayer = {
+      id: this.nextId++, // temporary placeholder until backend assigns
+      username: username,
+      mobile_number: mobile_number,
+      points: 0
+    };
 
-      this.players = [...this.players, existingPlayer]; // Update local state immutably
-    }
-    this.currentUser = existingPlayer;
-    this.wsService.joinLobby(username);    // Notify backend lobby join
-
-    return existingPlayer;
+    console.log(existingPlayer);
+    this.players = [...this.players, existingPlayer];
   }
+
+  this.currentUser = existingPlayer;
+
+  // ✅ Notify backend to join lobby, backend will respond with PlayerDTO including correct id
+  // this.wsService.joinLobby(username);
+
+  return existingPlayer;
+}
 
 
   updateScore(username: string, points: number) {
     const player = this.players.find(p => p.username === username);
     if (player) {
-      player.score = (player.score ?? 0) + points;
+      player.points = (player.points ?? 0) + points;
 
       // Sync score update with backend
       this.wsService.sendMessage({
         type: 'UPDATE_SCORE',
-        payload: { username, score: player.score }
+        payload: { username, points: player.points }
       });
     }
   }
 
   getLeaderboard(): MessagePayload[] {
   return [...this.players] // clone
-    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+    .sort((a, b) => (b.points ?? 0) - (a.points ?? 0))
     .slice(0, 5);
   }
 

@@ -8,9 +8,16 @@ public class GameRoomDTO {
 	 private List<Card> discardPile;
 	 private List<Card> drawPile;
 	 private int currentPlayerId;
-	 private boolean clockwise;
+	 private boolean clockwise=true;
 	 private String currentAara; // chosen color (aara) if wild was played
-	 
+	 private int turnTimeLeft; // seconds remaining for current player's turn
+
+	 public int getTurnTimeLeft() {
+	     return turnTimeLeft;
+	 }
+	 public void setTurnTimeLeft(int turnTimeLeft) {
+	     this.turnTimeLeft = turnTimeLeft;
+	 }	 
 	 public int getRoomId() {
 		return roomId;
 	 }
@@ -53,4 +60,10 @@ public class GameRoomDTO {
 	 public void setCurrentAara(String currentAara) { 
 		 this.currentAara = currentAara; 
 	 }
+	 @Override
+    public String toString() {
+        return "GameRoomDTO [roomId=" + roomId + ", players=" + players + ", discardPile=" + discardPile
+                + ", drawPile=" + drawPile + ", currentPlayerId=" + currentPlayerId + ", clockwise=" + clockwise
+                + ", currentAara=" + currentAara + ", turnTimeLeft=" + turnTimeLeft + "]";
+    }
 }

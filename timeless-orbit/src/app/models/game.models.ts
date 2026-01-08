@@ -11,7 +11,8 @@ export interface PlayerDTO {
   id: number;
   username: string;
   points: number;
-  hand: Card[];
+  hand?: Card[];  // only for current user
+  handCount: number;  // for everyone else
 }
 export interface GameRoomDTO {
   roomId: number;
@@ -20,5 +21,7 @@ export interface GameRoomDTO {
   discardPile: Card[];
   currentPlayerId: number;
   clockwise: boolean;
-  currentAara: string | null;
+  currentAara: string;
+  // ✅ Add this line
+  turnTimeLeft?: number;
 }
