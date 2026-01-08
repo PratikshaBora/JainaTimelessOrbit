@@ -1,51 +1,71 @@
-<div class="room-layout" *ngIf="isRoomLoaded">
+<ion-content [fullscreen]="true" class="game-board">
+  <div class="blob b-1"></div>
+  <div class="blob b-2"></div>
 
-  <!-- Controller Panel -->
-  <div class="controller-panel">
-    <div class="room-id">Room {{ roomId }}</div>
-    <div class="timer">Timer: {{ timeLeft }}</div>
-    <div class="turn">Turn: {{ activePlayer?.username }}</div>
-    <button class="leave-btn" (click)="leaveRoom()">Leave Room</button>
+  <div class="table-surface" *ngIf="isRoomLoaded">
+
+    <div class="player-slot top" *ngIf="opponentsBySlot.top">
+      <div class="glass-hand" [class.active-turn]="opponentsBySlot.top.isTurn">
+        <span class="player-name">{{ opponentsBySlot.top.username }}</span>
+        <div class="hand horizontal">
+          <div *ngFor="let c of createCountArray(opponentsBySlot.top.handCount)" class="card back"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="player-slot left" *ngIf="opponentsBySlot.left">
+      <div class="glass-hand" [class.active-turn]="opponentsBySlot.left.isTurn">
+        <span class="player-name">{{ opponentsBySlot.left.username }}</span>
+        <div class="hand vertical">
+          <div *ngFor="let c of createCountArray(opponentsBySlot.left.handCount)" class="card back"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="center-area">
+      <div class="pile draw glass-morphism" (click)="drawCard()">
+        <div class="card back stack"></div>
+        <span class="pile-label">DRAW ({{drawPileCount}})</span>
+      </div>
+
+      <div class="pile discard glass-morphism" (click)="pickDiscard()">
+        <div *ngIf="topDiscardCard" class="card face">
+          <img [src]="topDiscardCard.imageURL" alt="card">
+        </div>
+        <span class="pile-label">DISCARD</span>
+      </div>
+    </div>
+
+    <div class="player-slot right" *ngIf="opponentsBySlot.right">
+      <div class="glass-hand" [class.active-turn]="opponentsBySlot.right.isTurn">
+        <span class="player-name">{{ opponentsBySlot.right.username }}</span>
+        <div class="hand vertical">
+          <div *ngFor="let c of createCountArray(opponentsBySlot.right.handCount)" class="card back"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="player-slot bottom">
+      <div class="my-container">
+        <div class="timer-wrapper" *ngIf="isMyTurn">
+          <div class="timer-fill" [style.width.%]="(turnTimer/60)*100"></div>
+        </div>
+
+        <div class="glass-hand my-hand" [class.active-turn]="isMyTurn">
+          <div class="hand-header">
+            <span class="player-name">YOUR HAND</span>
+            <button *ngIf="myHand.length === 1" class="jj-button" (click)="jaiJinendra()">Jai Jinendra!</button>
+          </div>
+          <div class="hand horizontal">
+            <div *ngFor="let card of myHand; trackBy: trackByCard"
+                 class="card face playable"
+                 (click)="playCard(card)">
+              <img [src]="card.imageURL" alt="card">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
-
-  <!-- Game Panel -->
-  <div class="game-panel">
-
-    <!-- Top Opponent -->
-    <div class="top-opponent" *ngIf="opponentsBySlot.top">
-      <!-- horizontal back cards -->
-    </div>
-
-    <div class="middle-row">
-      <!-- Left Opponent -->
-      <div class="left-opponent" *ngIf="opponentsBySlot.left">
-        <!-- vertical back cards -->
-      </div>
-
-      <!-- Center Play Area -->
-      <div class="center-area">
-        <div class="draw-pile">Draw: {{ drawPileCount }}</div>
-        <div class="discard-pile">Discard: {{ discardPileCount }}</div>
-        <div class="turn-indicator">Turn: {{ activePlayer?.username }}</div>
-      </div>
-
-      <!-- Right Opponent -->
-      <div class="right-opponent" *ngIf="opponentsBySlot.right">
-        <!-- vertical back cards -->
-      </div>
-    </div>
-
-    <!-- Bottom (You) -->
-    <div class="bottom-player">
-      <div class="hand-cards">
-        <!-- your open cards -->
-      </div>
-      <div class="action-buttons">
-        <button (click)="jaiJinendra()">JaiJinendra</button>
-        <button (click)="playCard(selectedCard)">Play</button>
-        <button (click)="drawCard()">Draw</button>
-      </div>
-    </div>
-
-  </div>
-</div>
+</ion-content>
