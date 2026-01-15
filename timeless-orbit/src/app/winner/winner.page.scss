@@ -1,0 +1,32 @@
+.page-background {
+  --background: linear-gradient(135deg, #fff8e7, #fbe4c4); // cream + soft orange
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(210, 140, 70, 0.3); // orange-brown accent
+  padding: 20px;
+  margin: 20px;
+  animation: fadeIn 1s ease-in-out;
+}
+
+.winner-banner {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #a0522d; // warm brown
+}
+
+.winner-row {
+  background: rgba(255, 200, 120, 0.3); // saffron highlight
+  border: 2px solid goldenrod;
+  border-radius: 12px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}

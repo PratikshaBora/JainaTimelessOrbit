@@ -22,6 +22,10 @@ const routes: Routes = [
   {
     path: 'room/:id',
     loadChildren: () => import('./room/room.module').then(m => m.RoomPageModule)
+  },
+  {
+    path: 'winner',
+    loadChildren: () => import('./winner/winner.module').then( m => m.WinnerPageModule)
   }
 ];
 

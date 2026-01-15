@@ -1,6 +1,6 @@
-<ion-card>
+<ion-card class="glass">
   <ion-card-header>
-    <ion-card-title>🏁 Final Scoreboard</ion-card-title>
+    <ion-card-title>🏁 {{ title }}</ion-card-title>
   </ion-card-header>
 
   <ion-card-content>
@@ -9,12 +9,14 @@
       <ion-row>
         <ion-col><strong>Player</strong></ion-col>
         <ion-col><strong>Score</strong></ion-col>
+        <ion-col *ngIf="showRanks"><strong>Rank</strong></ion-col>
       </ion-row>
 
       <!-- Table rows -->
-      <ion-row *ngFor="let s of scores">
+      <ion-row *ngFor="let s of scores; let i = index" [class.winner-row]="i === 0 && showRanks">
         <ion-col>{{ s.username }}</ion-col>
         <ion-col>{{ s.score }}</ion-col>
+        <ion-col *ngIf="showRanks">{{ getRank(s.id) }}</ion-col>
       </ion-row>
 
       <!-- Empty state -->

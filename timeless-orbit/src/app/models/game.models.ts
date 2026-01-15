@@ -6,6 +6,8 @@ export interface Card {
   type: string;       // e.g. "NUMBER", "WILD"
   pointValue: number;
   imageURL: string;   // ✅ card image
+  newAara: string | null;    // set after change color
+  isPlayable?: boolean;
 }
 export interface PlayerDTO {
   id: number;
@@ -22,6 +24,12 @@ export interface GameRoomDTO {
   currentPlayerId: number;
   clockwise: boolean;
   currentAara: string;
+  winner:PlayerDTO;
   // ✅ Add this line
   turnTimeLeft?: number;
+}
+export interface ScoreboardEntry{
+  playerId:number;
+  username:string;
+  points:number;
 }

@@ -1,56 +1,15 @@
-.scoreboard {
-  ion-card {
-    margin: 20px;
-    border-radius: 12px;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    background: linear-gradient(135deg, #fffbe6, #fff);
-    animation: fadeIn 0.8s ease-in-out;
-  }
-
-  ion-card-title {
-    text-align: center;
-    font-size: 1.6rem;
-    font-weight: bold;
-    color: #d4af37; // gold color for winning vibe
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-  }
-
-  ion-row {
-    border-bottom: 1px solid #eee;
-    padding: 10px 0;
-    align-items: center;
-    transition: background 0.3s ease;
-  }
-
-  ion-row:hover {
-    background: rgba(255, 223, 0, 0.1); // subtle highlight on hover
-  }
-
-  ion-col {
-    text-align: center;
-    font-size: 1.1rem;
-    color: #333;
-  }
-
-  // Highlight the top scorer
-  ion-row:first-of-type ion-col {
-    font-weight: bold;
-    color: #d4af37; // gold
-    font-size: 1.3rem;
-  }
-
-  // Add podium colors for top 3
-  ion-row:nth-of-type(2) ion-col {
-    color: silver;
-  }
-
-  ion-row:nth-of-type(3) ion-col {
-    color: #cd7f32; // bronze
-  }
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 20px;
+  margin: 20px;
 }
 
-// Simple fade-in animation
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+.winner-row {
+  background: rgba(255, 215, 0, 0.2);
+  border: 2px solid gold;
+  border-radius: 12px;
 }

@@ -1,71 +1,111 @@
-<ion-content [fullscreen]="true" class="game-board">
-  <div class="blob b-1"></div>
-  <div class="blob b-2"></div>
+<div class="table-surface" *ngIf="isRoomLoaded" [ngClass]="'aara-theme-' + currentAara.toLowerCase()">
 
-  <div class="table-surface" *ngIf="isRoomLoaded">
-
-    <div class="player-slot top" *ngIf="opponentsBySlot.top">
-      <div class="glass-hand" [class.active-turn]="opponentsBySlot.top.isTurn">
-        <span class="player-name">{{ opponentsBySlot.top.username }}</span>
-        <div class="hand horizontal">
-          <div *ngFor="let c of createCountArray(opponentsBySlot.top.handCount)" class="card back"></div>
-        </div>
-      </div>
+  <div class="top-status-header glass-morphism">
+    <div class="status-group info-mini">
+      <span class="status-label">ROOM</span>
+      <span class="status-value">#{{roomId}}</span>
     </div>
 
-    <div class="player-slot left" *ngIf="opponentsBySlot.left">
-      <div class="glass-hand" [class.active-turn]="opponentsBySlot.left.isTurn">
-        <span class="player-name">{{ opponentsBySlot.left.username }}</span>
-        <div class="hand vertical">
-          <div *ngFor="let c of createCountArray(opponentsBySlot.left.handCount)" class="card back"></div>
-        </div>
-      </div>
+    <div class="v-divider"></div>
+
+    <div class="status-group">
+      <span class="status-label">USER</span>
+      <span class="status-value user-name">{{ currentUserName }}</span>
     </div>
 
-    <div class="center-area">
-      <div class="pile draw glass-morphism" (click)="drawCard()">
-        <div class="card back stack"></div>
+    <div class="status-timer" [class.low-time]="turnTimer < 10">
+      <span class="timer-number">{{turnTimer}}s</span>
+    </div>
+
+    <div class="status-group">
+      <span class="status-label">TURN</span>
+      <span class="status-value highlight">
+        {{ isMyTurn ? 'YOU' : (activePlayer?.username || '...') }}
+      </span>
+    </div>
+
+    <div class="v-divider"></div>
+
+    <div class="status-group aara-container">
+      <span class="status-label">AARA</span>
+      <span class="status-value aara-text">{{ currentAara }}</span>
+    </div>
+  </div>
+
+  <div class="player-slot top-position" *ngIf="opponentsBySlot.top">
+    <div class="turn-indicator-arrow" *ngIf="activePlayer?.id === opponentsBySlot.top.id">▼</div>
+    <div class="opponent-container top-wide-box glass-morphism" [class.active-glow]="activePlayer?.id === opponentsBySlot.top.id">
+      <span class="player-name-tag">{{ opponentsBySlot.top.username }} ({{ opponentsBySlot.top.handCount }})</span>
+      <div class="opponent-hand horizontal-stack">
+        <div *ngFor="let c of createCountArray(opponentsBySlot.top.handCount)" class="card back side-card"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="player-slot left" *ngIf="opponentsBySlot.left">
+    <div class="turn-indicator-arrow side-arrow" *ngIf="activePlayer?.id === opponentsBySlot.left.id">▶</div>
+    <div class="opponent-container side-box glass-morphism" [class.active-glow]="activePlayer?.id === opponentsBySlot.left.id">
+      <span class="player-name-tag">{{ opponentsBySlot.left.username }}({{ opponentsBySlot.left.handCount }})</span>
+      <div class="opponent-hand vertical-stack">
+        <div *ngFor="let c of createCountArray(opponentsBySlot.left.handCount)" class="card back side-card"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="player-slot right" *ngIf="opponentsBySlot.right">
+    <div class="turn-indicator-arrow side-arrow" *ngIf="activePlayer?.id === opponentsBySlot.right.id">◀</div>
+    <div class="opponent-container side-box glass-morphism" [class.active-glow]="activePlayer?.id === opponentsBySlot.right.id">
+      <span class="player-name-tag">{{ opponentsBySlot.right.username }}({{ opponentsBySlot.right.handCount }})</span>
+      <div class="opponent-hand vertical-stack">
+        <div *ngFor="let c of createCountArray(opponentsBySlot.right.handCount)" class="card back side-card"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="center-area">
+    <div class="drawing-card-anim" *ngIf="isDrawing">
+      <img src="assets/cards/back.png" class="card back center-card">
+    </div>
+
+    <div class="piles-wrapper">
+      <div class="pile-box" (click)="drawCard()">
+        <img src="assets/cards/back.png" class="card back center-card">
         <span class="pile-label">DRAW ({{drawPileCount}})</span>
       </div>
 
-      <div class="pile discard glass-morphism" (click)="pickDiscard()">
-        <div *ngIf="topDiscardCard" class="card face">
-          <img [src]="topDiscardCard.imageURL" alt="card">
-        </div>
+      <div class="pile-box">
+        <img *ngIf="topDiscardCard"
+            [src]="topDiscardCard.imageURL"
+            class="card face center-card"
+            [class.played-anim]="cardJustPlayed">
         <span class="pile-label">DISCARD</span>
       </div>
     </div>
-
-    <div class="player-slot right" *ngIf="opponentsBySlot.right">
-      <div class="glass-hand" [class.active-turn]="opponentsBySlot.right.isTurn">
-        <span class="player-name">{{ opponentsBySlot.right.username }}</span>
-        <div class="hand vertical">
-          <div *ngFor="let c of createCountArray(opponentsBySlot.right.handCount)" class="card back"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="player-slot bottom">
-      <div class="my-container">
-        <div class="timer-wrapper" *ngIf="isMyTurn">
-          <div class="timer-fill" [style.width.%]="(turnTimer/60)*100"></div>
-        </div>
-
-        <div class="glass-hand my-hand" [class.active-turn]="isMyTurn">
-          <div class="hand-header">
-            <span class="player-name">YOUR HAND</span>
-            <button *ngIf="myHand.length === 1" class="jj-button" (click)="jaiJinendra()">Jai Jinendra!</button>
-          </div>
-          <div class="hand horizontal">
-            <div *ngFor="let card of myHand; trackBy: trackByCard"
-                 class="card face playable"
-                 (click)="playCard(card)">
-              <img [src]="card.imageURL" alt="card">
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </div>
-</ion-content>
+
+  <div class="player-slot bottom">
+    <div class="my-zone-container glass-morphism" [class.active-glow]="isMyTurn">
+      <span class="bottom-left-label">YOUR HAND ({{myHand.length}})</span>
+
+      <div class="hand">
+        <div *ngFor="let card of myHand; let i = index"
+             class="card face my-playable-card dealing-anim"
+             [class.playable-glow]="card.isPlayable"
+             [style.animation-delay]="(i * 0.08) + 's'"
+             (click)="playCard(card)">
+            <img [src]="card.imageURL">
+        </div>
+      </div>
+
+      <div class="action-wrapper">
+        <ion-button
+          *ngIf="myHand.length <= 2"
+          color="warning"
+          class="jj-button vibrant-pulse"
+          (click)="jaiJinendra()">
+          Jai Jinendra
+        </ion-button>
+      </div>
+    </div>
+  </div>
+</div>

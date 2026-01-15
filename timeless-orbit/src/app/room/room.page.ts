@@ -1,10 +1,13 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { WinnerPage } from './../winner/winner.page';
+import { Component, OnDestroy, OnInit, Injectable } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { WebsocketService } from '../services/websocket.service';
 import { PlayerService } from '../services/player.service';
 import { Card, PlayerDTO, GameRoomDTO } from '../models/game.models';
 import { StompSubscription } from '@stomp/stompjs';
 import { MessagePayload } from '../models/message-payload';
+import { Observable, Subscription } from 'rxjs';
+import { AlertController, ToastController } from '@ionic/angular';
 
 type OpponentSlots = {
   top?: PlayerDTO & { handCount: number; isTurn: boolean };
@@ -18,7 +21,9 @@ type OpponentSlots = {
   styleUrls: ['./room.page.scss'],
   standalone: false
 })
+@Injectable({providedIn:'root'})
 export class RoomPage implements OnInit, OnDestroy {
+
   players: (PlayerDTO & { handCount: number; isTurn: boolean; hand?: Card[] })[] = [];
   opponentsBySlot: OpponentSlots = {};
   activePlayer?: PlayerDTO;
@@ -44,15 +49,24 @@ export class RoomPage implements OnInit, OnDestroy {
   private jjInterval: any;
 
   roomId!: number;
-  private roomSub?: StompSubscription;
+  private roomSub?: Subscription;
   roomData!: GameRoomDTO;
   isRoomLoaded = false;
+  currentAara ='';
+  winner ?: PlayerDTO;
+
+  isDrawing = false;
+  cardJustPlayed = false;
+
+  private hasSaidJJ = false;
 
   constructor(
     private router: Router,
     private route: ActivatedRoute,
     private wsService: WebsocketService,
-    private playerService: PlayerService
+    private playerService: PlayerService,
+    private alertCtrl: AlertController,
+    private toastCtrl: ToastController
   ) {}
 
   ngOnInit() {
@@ -69,21 +83,43 @@ export class RoomPage implements OnInit, OnDestroy {
     }
 
     if (state?.room) {
+      // ✅ Apply snapshot immediately
       this.roomData = state.room;
       this.roomId = state.room.roomId;
+      localStorage.setItem('roomId', String(this.roomId));   // ✅ save
       this.isRoomLoaded = true;
+      this.winner = state.room.winner;
       this.applyState(state.room);
     } else {
-      this.route.paramMap.subscribe(params => {
-        const roomId = Number(params.get('id'));
-        this.roomId = roomId;
-        this.roomSub = this.wsService.subscribeToRoom((room: GameRoomDTO) => {
-          this.roomData = room;
-          this.isRoomLoaded = true;
-          this.applyState(room);
-        });
-      });
+      // ✅ Fallback: get roomId from route params
+      const idParam = this.route.snapshot.paramMap.get('id');
+      if (!idParam) {
+        console.error('No roomId found in route params');
+        this.router.navigate(['/home']);
+        return;
+      }
+      this.roomId = +idParam;
     }
+    // ✅ Always subscribe to room updates
+    console.log("Current Room ID : ",this.roomId);
+    this.wsService.subscribeToGameRoom(this.roomId);
+    this.roomSub = this.wsService.getGameRoomUpdates().subscribe(room => {
+      if (room) {
+        this.roomData = room;
+        this.isRoomLoaded = true;
+        this.applyState(room);
+      }
+    });
+    // ✅ Listen for scoreboard updates
+    this.wsService.scoreboard$.subscribe(scores => {
+      if (scores && scores.length > 0) {
+        const sorted = [...scores].sort((a, b) => a.points - b.points);
+        console.log("Final scoreboard:", sorted);
+
+        // Navigate to scoreboard page with data
+        this.router.navigate(['/winner'], { state: { scores: sorted } });
+      }
+    });
   }
 
   ngOnDestroy() {
@@ -94,6 +130,11 @@ export class RoomPage implements OnInit, OnDestroy {
 
   private applyState(state: GameRoomDTO): void {
     this.roomData = state;
+
+    if(state.winner){
+      this.winner = state.winner;
+      this.stopGameAndCelebrate();
+    }
 
     this.players = state.players.map(p => {
       const isMe = p.id === this.myPlayerId || p.username === this.currentUserName;
@@ -116,8 +157,19 @@ export class RoomPage implements OnInit, OnDestroy {
     this.drawPileCount = this.drawPile.length;
     this.discardPileCount = this.discardPile.length;
     this.topDiscardCard = this.discardPile[this.discardPileCount - 1];
+    // --- UPDATED HAND LOGIC ---
+    const rawHand = this.myPlayer?.hand ?? [];
+    this.currentAara = state.currentAara;
+    console.log("Top card from discard pile : ",this.topDiscardCard);
 
     this.isMyTurn = state.currentPlayerId === this.myPlayerId;
+    // Calculate playability for each card based on the current Aara
+    this.myHand = rawHand.map(card => {
+      return {
+        ...card,
+        isPlayable: this.checkIfCardIsPlayable(card, state)
+      };
+    });
     if (state.turnTimeLeft !== undefined) this.timeLeft = state.turnTimeLeft;
 
     if (this.isMyTurn) {
@@ -179,26 +231,151 @@ export class RoomPage implements OnInit, OnDestroy {
     };
   }
 
+
   // --- Actions ---
-  playCard(card?: Card): void {
+  async playCard(card: Card): Promise<void> {
+    console.log("inside play card method : ",card," play of : ",this.currentUserName);
+    if(card.type === "WILD" && card.dwar === "COLOR_CHANGE_ADD4" || card.dwar === "COLOR_CHANGE"){
+        const alert = await this.alertCtrl.create({
+          header: 'Choose Aara',
+          message: 'Select the color you want to change to:',
+          buttons: [
+            {
+              text: 'FIRST - BROWN',
+              handler: () => this.confirmAara(card, 'FIRST')
+            },
+            {
+              text: 'SECOND - GREEN',
+              handler: () => this.confirmAara(card, 'SECOND')
+            },
+            {
+              text: 'THIRD - BLUE',
+              handler: () => this.confirmAara(card, 'THIRD')
+            },
+            {
+              text: 'FOURTH - PINK',
+              handler: () => this.confirmAara(card, 'FOURTH')
+            },
+            {
+              text: 'FIFTH - PURPLE',
+              handler: () => this.confirmAara(card, 'FIFTH')
+            },
+            {
+              text: 'SIXTH - MUD_GREEN',
+              handler: () => this.confirmAara(card, 'SIXTH')
+            }
+          ]
+        });
+        await alert.present();
+        return; // stop here until user chooses
+      }
     if (!this.isMyTurn || !card) return;
+    this.cardJustPlayed = true; // Trigger discard animation
     this.wsService.playCard(this.roomId, this.myPlayerId, card);
+    // Reset flag so next card can animate too
+    setTimeout(() => { this.cardJustPlayed = false; }, 600);
+
     if (this.selectedCard === card) this.selectedCard = undefined;
   }
-
-  drawCard(): void {
-    if (!this.isMyTurn || this.drawPileCount === 0) return;
-    this.wsService.drawCard(this.roomId, this.myPlayerId);
+  private confirmAara(card: Card, chosenAara: string) {
+    console.log('Chosen aara:', chosenAara);
+    // attach chosen aara to card payload
+    card.newAara = chosenAara;
+    this.wsService.playCard(this.roomId, this.myPlayerId, card);
   }
 
-  pickDiscard(): void {
-    if (!this.isMyTurn || !this.topDiscardCard) return;
-    this.wsService.pickDiscard(this.roomId, this.myPlayerId);
+  /**
+   * Logic to determine if a card should glow based on current Aara and Discard pile
+   */
+  private checkIfCardIsPlayable(card: Card, state: GameRoomDTO): boolean {
+    if (!this.isMyTurn) return false;
+    if (!this.topDiscardCard) return true; // Can play anything if pile is empty
+
+    const topCard = this.topDiscardCard;
+    const currentRoomAara = state.currentAara.toUpperCase();
+
+    // Basic Rule: Match Aara (Color) or Value
+    // Note: We map Aara names to Card Colors here
+    const AARA_COLOR_MAP: { [key: string]: string } = {
+      'FIRST': '#8d6e63',  // Brown
+      'SECOND': '#4caf50', // Green
+      'THIRD': '#2196f3',  // Blue
+      'FOURTH': '#f06292', // Pink
+      'FIFTH': '#9c27b0',  // Purple
+      'SIXTH': '#546e7a'   // Mud Green
+    };
+
+    const currentAaraColor = AARA_COLOR_MAP[currentRoomAara];
+
+    // 1. WILD cards (COLOR_CHANGE, COLOR_CHANGE_ADD4) are always playable
+    if (card.type === 'WILD') return true;
+    // 2. Match by Aara (The "Color" matching logic)
+    // Check if the card belongs to the current Aara of the room
+    const matchesAara = card.aara.toUpperCase() === currentRoomAara;
+    // 3. Match by Dwar (The "Value/Symbol" matching logic)
+    // Check if the Dwar (STITHI, HEIGHT, SKIP, etc.) matches the top card
+    const matchesDwar = card.dwar === topCard.dwar;
+
+    return matchesAara || matchesDwar;
+  }
+  // Update drawCard method
+  drawCard(): void {
+    if (!this.isMyTurn || this.drawPileCount === 0) return;
+
+    this.isDrawing = true; // Start animation
+    this.wsService.drawCard(this.roomId, this.myPlayerId);
+
+    // Hide the ghost card after animation finishes
+    setTimeout(() => { this.isDrawing = false; }, 600);
   }
 
   jaiJinendra(): void {
-    if (!this.isMyTurn || this.myHand.length !== 1) return;
-    this.wsService.jaiJinendra(this.roomId, this.myPlayerId);
+    // GUARD: Stop if it's NOT my turn OR if I have too many cards
+    if (!this.isMyTurn || this.myHand.length > 2) {
+      console.log("Cannot say Jai Jinendra right now.");
+      return;
+    }
+    this.hasSaidJJ = true;
+    // this.wsService.jaiJinendra(this.roomId, this.myPlayerId);
+
+    // Optional: Visual confirmation for the player
+    this.presentToast("You declared Jai Jinendra!");
+  }
+  async presentToast(message: string, color: string = 'success') {
+    const toast = await this.toastCtrl.create({
+      message: message,
+      duration: 2000,
+      position: 'bottom',
+      color: color, // 'success' for JJ, 'danger' for Penalties
+      cssClass: 'vibrant-toast',
+      buttons: [
+        {
+          text: 'OK',
+          role: 'cancel'
+        }
+      ]
+    });
+    await toast.present();
+  }
+
+  private stopGameAndCelebrate(): void
+  {
+    // Stop timers
+    clearInterval(this.turnInterval);
+    clearInterval(this.jjInterval);
+    // Optionally unsubscribe from further updates
+    this.roomSub?.unsubscribe();
+    // Trigger fireworks or celebration
+    this.showFireworks();
+  }
+  showFireworks()
+  {
+    // Or show an Ionic alert
+    this.alertCtrl.create({
+      header: '🎉 Game Over!',
+      message: `Winner is ${this.winner?.username}!`,
+      buttons: ['OK']
+    }).then(alert => alert.present());
   }
 
   leaveRoom(): void {
@@ -245,8 +422,12 @@ export class RoomPage implements OnInit, OnDestroy {
     return (card as any)?.id ?? index;
   }
 
+  // createCountArray(count: number): any[] {
+  //   const safe = Math.max(0, count || 0);
+  //   return Array.from({ length: safe });
+  // }
   createCountArray(count: number): any[] {
-    const safe = Math.max(0, count || 0);
-    return Array.from({ length: safe });
+    const safeCount = (count && count > 0) ? Math.floor(count) : 0;
+    return new Array(safeCount);
   }
 }

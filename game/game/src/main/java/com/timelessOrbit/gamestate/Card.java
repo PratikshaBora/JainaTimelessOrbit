@@ -1,12 +1,12 @@
 package com.timelessOrbit.gamestate;
 
 public class Card {
-	
 	public Aara aara;
     public Dwar dwar;
     public CardType type;
     public String imageURL; // ✅ new field
     public int pointValue;
+    public Aara newAara;
     
     public Card(Aara aara, Dwar dwar) {
         this.aara = aara;

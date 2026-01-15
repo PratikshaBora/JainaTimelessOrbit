@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { MessagePayload } from '../models/message-payload';
 import { GameRoomDTO, Card } from '../models/game.models';
 import * as SockJS from 'sockjs-client';
@@ -10,8 +10,7 @@ export class WebsocketService {
   private stompClient!: Client;
   private connected: boolean = false;
 
-  // Observables for lobby state
-  // ✅ Subject for playerJoined
+  // ✅ Subjects / obeservables
   private playerJoinedSubject = new BehaviorSubject<MessagePayload | null>(null);
   playerJoined$ = this.playerJoinedSubject.asObservable();
 
@@ -23,6 +22,11 @@ export class WebsocketService {
 
   private scoreboardSubject = new BehaviorSubject<any>([]);
   public scoreboard$ = this.scoreboardSubject.asObservable();
+
+  // ✅ Stream of game room updates
+  private gameRoomUpdates$ = new BehaviorSubject<GameRoomDTO | null>(null);
+
+
 
   // --- Connection setup ---
   connect(callback: Function | null = null) {
@@ -41,6 +45,7 @@ export class WebsocketService {
       console.log('Connected to WebSocket');
       this.connected = true;
 
+      // Lobby + global topics
       this.stompClient.subscribe('/topic/playerJoined', (message) => {
         const player: MessagePayload = JSON.parse(message.body);
         this.playerJoinedSubject.next(player);
@@ -57,12 +62,6 @@ export class WebsocketService {
         this.playersSubject.next(mappedPlayers);
       });
 
-      // ✅ Subscribe to game updates (shared info)
-      this.stompClient.subscribe('/topic/game', (message: IMessage) => {
-        const update = JSON.parse(message.body);
-        console.log('Game update:', update);
-      });
-
       // ✅ Subscribe to scoreboard updates
       this.stompClient.subscribe('/topic/scoreboard', (message: IMessage) => {
         const scores = JSON.parse(message.body);
@@ -76,22 +75,31 @@ export class WebsocketService {
         console.log('Room created:', room);
         this.roomsSubject.next([...this.roomsSubject.value, room]);
       });
-
       // ✅ run callback only after connection is established
-      if (callback) {
-        callback();
-      }
+      if (callback) {   callback();      }
     };
-
     this.stompClient.activate();
+  }
+  // ✅ Room-specific subscription
+  subscribeToGameRoom(roomId: number) {
+    this.stompClient?.subscribe(`/topic/game/${roomId}`, (message: IMessage) => {
+      const update: GameRoomDTO = JSON.parse(message.body);
+      console.log(`GameRoom ${roomId} update:`, update);
+      this.gameRoomUpdates$.next(update);
+    });
+  }
+
+  getGameRoomUpdates(): Observable<GameRoomDTO | null> {
+    return this.gameRoomUpdates$.asObservable();
   }
 
   disconnect() {
     if (this.stompClient) {
       this.stompClient.deactivate();
+      this.connected = false;
     }
   }
-
+  // --- Generic publish ---
   public sendMessage(message: any, destination: string = '/app/game'): void {
     if (this.stompClient && this.stompClient.connected) {
       this.stompClient.publish({
@@ -137,28 +145,21 @@ export class WebsocketService {
   playCard(roomId: number, playerId: number, card: Card) {
     this.stompClient?.publish({
       destination: `/app/game/${roomId}/play`,
-      body: JSON.stringify({ playerId, card }),
+      body: JSON.stringify({ roomId, playerId, card }),
     });
   }
 
   drawCard(roomId: number, playerId: number) {
     this.stompClient?.publish({
       destination: `/app/game/${roomId}/draw`,
-      body: JSON.stringify({ playerId }),
-    });
-  }
-
-  pickDiscard(roomId: number, playerId: number) {
-    this.stompClient?.publish({
-      destination: `/app/game/${roomId}/pickDiscard`,
-      body: JSON.stringify({ playerId }),
+      body: JSON.stringify({ roomId, playerId }),
     });
   }
 
   jaiJinendra(roomId: number, playerId: number) {
     this.stompClient?.publish({
       destination: `/app/game/${roomId}/jaiJinendra`,
-      body: JSON.stringify({ playerId }),
+      body: JSON.stringify({ roomId,playerId }),
     });
   }
 

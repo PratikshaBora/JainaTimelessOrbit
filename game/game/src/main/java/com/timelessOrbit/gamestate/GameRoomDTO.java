@@ -7,9 +7,11 @@ public class GameRoomDTO {
 	 private List<PlayerDTO> players;
 	 private List<Card> discardPile;
 	 private List<Card> drawPile;
+	 private List<PlayerScore> playerScores;
 	 private int currentPlayerId;
+	 private Player winner;
 	 private boolean clockwise=true;
-	 private String currentAara; // chosen color (aara) if wild was played
+	 private Aara currentAara; // chosen color (aara) if wild was played
 	 private int turnTimeLeft; // seconds remaining for current player's turn
 
 	 public int getTurnTimeLeft() {
@@ -42,11 +44,23 @@ public class GameRoomDTO {
 	 public void setDrawPile(List<Card> drawPile) {
 		this.drawPile = drawPile;
 	 }	 
+	 public List<PlayerScore> getPlayerScores(){
+		 return playerScores;
+	 }
+	 public void setPlayerScore(List<PlayerScore> playerScores) {
+		 this.playerScores = playerScores;
+	 }
 	 public int getCurrentPlayerId() { 
 		 return currentPlayerId; 
 	 }
 	 public void setCurrentPlayerId(int currentPlayerId) { 
 		 this.currentPlayerId = currentPlayerId; 
+	 }
+	 public Player getWinner() {
+		 return this.winner;
+	 }
+	 public void setWinner(Player winner) {
+		 this.winner = winner;
 	 }
 	 public boolean isClockwise() { 
 		 return clockwise; 
@@ -54,10 +68,10 @@ public class GameRoomDTO {
 	 public void setClockwise(boolean clockwise) { 
 		 this.clockwise = clockwise; 
 	 }
-	 public String getCurrentAara() { 
+	 public Aara getCurrentAara() { 
 		 return currentAara; 
 	 }
-	 public void setCurrentAara(String currentAara) { 
+	 public void setCurrentAara(Aara currentAara) { 
 		 this.currentAara = currentAara; 
 	 }
 	 @Override
