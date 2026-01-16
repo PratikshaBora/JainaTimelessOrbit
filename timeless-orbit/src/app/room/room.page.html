@@ -85,7 +85,7 @@
 
   <div class="player-slot bottom">
     <div class="my-zone-container glass-morphism" [class.active-glow]="isMyTurn">
-      <span class="bottom-left-label">YOUR HAND ({{myHand.length}})</span>
+      <span class="bottom-left-label">({{myHand.length}})</span>
 
       <div class="hand">
         <div *ngFor="let card of myHand; let i = index; trackBy: trackByCard"
