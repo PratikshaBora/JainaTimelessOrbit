@@ -174,7 +174,7 @@ public class GameRoom {
 		Collections.shuffle(drawPile);
 
 		// Deal 5 cards one by one in rotation
-		for (int round = 0; round < 2; round++) {
+		for (int round = 0; round < 5; round++) {
 			for (Player p : players) {
 				p.getHand().add(drawPile.remove(0));
 			}
@@ -191,43 +191,41 @@ public class GameRoom {
 		System.out.println("inside game room: " + card);
 		System.out.println("current player : " + player.getUsername());
 		Card top = discardPile.get(discardPile.size() - 1);
-		System.out.println("Jai Jinendra : "+ getSaidJaiJinendra());
-		
+		System.out.println("Jai Jinendra : " + getSaidJaiJinendra());
+
 		// Only allow if it's the player's turn
 		if (player != getCurrentPlayer()) {
 			System.out.println("player not matched");
 		} else {
 			if (player.getHand().size() == 1 && saidJaiJinendra == true) {
-				if(engine.isValidMove(card, top)) {
+				if (engine.isValidMove(card, top)) {
 					discardPile.add(card);
 					boolean success = player.removeCard(card);
-					
-					if(success == false) {
+
+					if (success == false) {
 						winner = resolveEndgame();
 					}
-				}
-				else {
+				} else {
 					drawCards(player);
 				}
 			} else {
+				System.out.println("Checking : " + card + " with " + top);
 
-			}
-		}
-		
-		System.out.println("Checking : " + card + " with " + top);
+				if (engine.isValidMove(card, top)) {
+					boolean success = player.removeCard(card);
+					if (success == false) {
+						winner = resolveEndgame();
+					} else {
+						System.out.println("In hand cards : " + player.hand.size());
+						System.out.println("current hand card no : " + player.getHandCount());
+						discardPile.add(card);
+						setCurrentAara(discardPile.get(discardPile.size() - 1).aara);
+						System.out.println("current top discard : " + discardPile.get(discardPile.size() - 1));
+						engine.applyAction(card);
+						engine.nextPlayer();
+					}
+				}
 
-		if (engine.isValidMove(card, top)) {
-			boolean success = player.removeCard(card);
-			if (success == false) {
-				winner = resolveEndgame();
-			} else {
-				System.out.println("In hand cards : " + player.hand.size());
-				System.out.println("current hand card no : " + player.getHandCount());
-				discardPile.add(card);
-				setCurrentAara(discardPile.get(discardPile.size() - 1).aara);
-				System.out.println("current top discard : " + discardPile.get(discardPile.size() - 1));
-				engine.applyAction(card);
-				engine.nextPlayer();
 			}
 		}
 
