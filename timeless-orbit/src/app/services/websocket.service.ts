@@ -25,8 +25,8 @@ export class WebsocketService {
 
   // ✅ Stream of game room updates
   private gameRoomUpdates$ = new BehaviorSubject<GameRoomDTO | null>(null);
-
-
+  private messageSubject = new BehaviorSubject<string | null>(null);
+  public messageSubject$ = this.messageSubject.asObservable();
 
   // --- Connection setup ---
   connect(callback: Function | null = null) {
@@ -89,6 +89,13 @@ export class WebsocketService {
     });
   }
 
+  subscibeToJaiJinendra(roomId:number){
+    this.stompClient?.subscribe(`/topic/game/${roomId}/jaiJinendra`,(message:IMessage) => {
+      const data = message.body;
+      console.log(`GameRoom ${roomId} message : `,data);
+      this.messageSubject.next(data);
+    });
+  }
   getGameRoomUpdates(): Observable<GameRoomDTO | null> {
     return this.gameRoomUpdates$.asObservable();
   }
@@ -166,14 +173,14 @@ export class WebsocketService {
   autoPenaltyDraw(roomId: number, playerId: number) {
     this.stompClient?.publish({
       destination: `/app/game/${roomId}/autoPenaltyDraw`,
-      body: JSON.stringify({ playerId }),
+      body: JSON.stringify({ roomId,playerId }),
     });
   }
 
   jjTimeoutPenalty(roomId: number, playerId: number) {
     this.stompClient?.publish({
       destination: `/app/game/${roomId}/jjTimeoutPenalty`,
-      body: JSON.stringify({ playerId }),
+      body: JSON.stringify({ roomId,playerId }),
     });
   }
   onPlayerJoined(callback: (player: MessagePayload) => void) {

@@ -120,6 +120,21 @@ export class RoomPage implements OnInit, OnDestroy {
         this.router.navigate(['/winner'], { state: { scores: sorted } });
       }
     });
+
+    this.wsService.messageSubject$.subscribe(msg => {
+      if(msg){
+        this.showJaiJinendraAlert(msg);
+      }
+    })
+  }
+
+  async showJaiJinendraAlert(message: string) {
+    const alert = await this.alertCtrl.create({
+      header: '🙏 Jai Jinendra!',
+      message: message, // e.g. "PlayerX has declared Jai Jinendra!"
+      buttons: ['OK']
+    });
+    await alert.present();
   }
 
   ngOnDestroy() {
@@ -294,8 +309,6 @@ export class RoomPage implements OnInit, OnDestroy {
     const topCard = this.topDiscardCard;
     const currentRoomAara = state.currentAara.toUpperCase();
 
-    // Basic Rule: Match Aara (Color) or Value
-    // Note: We map Aara names to Card Colors here
     const AARA_COLOR_MAP: { [key: string]: string } = {
       'FIRST': '#8d6e63',  // Brown
       'SECOND': '#4caf50', // Green
@@ -307,15 +320,9 @@ export class RoomPage implements OnInit, OnDestroy {
 
     const currentAaraColor = AARA_COLOR_MAP[currentRoomAara];
 
-    // 1. WILD cards (COLOR_CHANGE, COLOR_CHANGE_ADD4) are always playable
     if (card.type === 'WILD') return true;
-    // 2. Match by Aara (The "Color" matching logic)
-    // Check if the card belongs to the current Aara of the room
     const matchesAara = card.aara.toUpperCase() === currentRoomAara;
-    // 3. Match by Dwar (The "Value/Symbol" matching logic)
-    // Check if the Dwar (STITHI, HEIGHT, SKIP, etc.) matches the top card
     const matchesDwar = card.dwar === topCard.dwar;
-
     return matchesAara || matchesDwar;
   }
   // Update drawCard method
@@ -331,31 +338,14 @@ export class RoomPage implements OnInit, OnDestroy {
 
   jaiJinendra(): void {
     // GUARD: Stop if it's NOT my turn OR if I have too many cards
-    if (!this.isMyTurn || this.myHand.length > 2) {
+    if (!this.isMyTurn || this.myHand.length > 1) {
       console.log("Cannot say Jai Jinendra right now.");
       return;
     }
     this.hasSaidJJ = true;
-    // this.wsService.jaiJinendra(this.roomId, this.myPlayerId);
-
-    // Optional: Visual confirmation for the player
-    this.presentToast("You declared Jai Jinendra!");
-  }
-  async presentToast(message: string, color: string = 'success') {
-    const toast = await this.toastCtrl.create({
-      message: message,
-      duration: 2000,
-      position: 'bottom',
-      color: color, // 'success' for JJ, 'danger' for Penalties
-      cssClass: 'vibrant-toast',
-      buttons: [
-        {
-          text: 'OK',
-          role: 'cancel'
-        }
-      ]
-    });
-    await toast.present();
+    clearInterval(this.jjInterval);
+    clearInterval(this.turnInterval);
+    this.wsService.jaiJinendra(this.roomId, this.myPlayerId);
   }
 
   private stopGameAndCelebrate(): void
@@ -386,7 +376,7 @@ export class RoomPage implements OnInit, OnDestroy {
   // --- Timers ---
   private startTurnTimer(): void {
     clearInterval(this.turnInterval);
-    this.turnTimer = 60;
+    this.turnTimer = 30;
     this.turnInterval = setInterval(() => {
       this.turnTimer--;
       if (this.turnTimer <= 0) {
@@ -399,8 +389,9 @@ export class RoomPage implements OnInit, OnDestroy {
   private startJaiJinendraTimer(): void {
     clearInterval(this.jjInterval);
     if (this.myHand.length !== 1) return;
-    this.jjTimer = 60;
+    this.jjTimer = 30;
     this.jjInterval = setInterval(() => {
+      if(this.hasSaidJJ){    clearInterval(this.jjInterval); return;  }
       this.jjTimer--;
       if (this.jjTimer <= 0) {
         clearInterval(this.jjInterval);
@@ -422,10 +413,6 @@ export class RoomPage implements OnInit, OnDestroy {
     return (card as any)?.id ?? index;
   }
 
-  // createCountArray(count: number): any[] {
-  //   const safe = Math.max(0, count || 0);
-  //   return Array.from({ length: safe });
-  // }
   createCountArray(count: number): any[] {
     const safeCount = (count && count > 0) ? Math.floor(count) : 0;
     return new Array(safeCount);

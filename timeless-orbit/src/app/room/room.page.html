@@ -33,7 +33,7 @@
   </div>
 
   <div class="player-slot top-position" *ngIf="opponentsBySlot.top">
-    <div class="turn-indicator-arrow" *ngIf="activePlayer?.id === opponentsBySlot.top.id">▼</div>
+    <div class="turn-indicator-arrow arrow-top" *ngIf="activePlayer?.id === opponentsBySlot.top.id">▶</div>
     <div class="opponent-container top-wide-box glass-morphism" [class.active-glow]="activePlayer?.id === opponentsBySlot.top.id">
       <span class="player-name-tag">{{ opponentsBySlot.top.username }} ({{ opponentsBySlot.top.handCount }})</span>
       <div class="opponent-hand horizontal-stack">
@@ -43,7 +43,7 @@
   </div>
 
   <div class="player-slot left" *ngIf="opponentsBySlot.left">
-    <div class="turn-indicator-arrow side-arrow" *ngIf="activePlayer?.id === opponentsBySlot.left.id">▶</div>
+    <div class="turn-indicator-arrow arrow-side" *ngIf="activePlayer?.id === opponentsBySlot.left.id">▼</div>
     <div class="opponent-container side-box glass-morphism" [class.active-glow]="activePlayer?.id === opponentsBySlot.left.id">
       <span class="player-name-tag">{{ opponentsBySlot.left.username }}({{ opponentsBySlot.left.handCount }})</span>
       <div class="opponent-hand vertical-stack">
@@ -53,7 +53,7 @@
   </div>
 
   <div class="player-slot right" *ngIf="opponentsBySlot.right">
-    <div class="turn-indicator-arrow side-arrow" *ngIf="activePlayer?.id === opponentsBySlot.right.id">◀</div>
+    <div class="turn-indicator-arrow arrow-side" *ngIf="activePlayer?.id === opponentsBySlot.right.id">▼</div>
     <div class="opponent-container side-box glass-morphism" [class.active-glow]="activePlayer?.id === opponentsBySlot.right.id">
       <span class="player-name-tag">{{ opponentsBySlot.right.username }}({{ opponentsBySlot.right.handCount }})</span>
       <div class="opponent-hand vertical-stack">
@@ -88,23 +88,23 @@
       <span class="bottom-left-label">YOUR HAND ({{myHand.length}})</span>
 
       <div class="hand">
-        <div *ngFor="let card of myHand; let i = index"
-             class="card face my-playable-card dealing-anim"
+        <div *ngFor="let card of myHand; let i = index; trackBy: trackByCard"
+             class="card face my-playable-card"
              [class.playable-glow]="card.isPlayable"
-             [style.animation-delay]="(i * 0.08) + 's'"
              (click)="playCard(card)">
             <img [src]="card.imageURL">
         </div>
       </div>
 
-      <div class="action-wrapper">
-        <ion-button
-          *ngIf="myHand.length <= 2"
-          color="warning"
-          class="jj-button vibrant-pulse"
-          (click)="jaiJinendra()">
-          Jai Jinendra
-        </ion-button>
+      <div class="action-wrapper" *ngIf="myHand.length < 2">
+        <div class="jj-container">
+          <ion-button
+            (click)="jaiJinendra()"
+            class="jj-circle-button vibrant-pulse">
+            <img src="assets/cards/jainsymbol.jpg" alt="Jai Jinendra">
+          </ion-button>
+          <span class="jj-text">Jai Jinendra</span>
+        </div>
       </div>
     </div>
   </div>

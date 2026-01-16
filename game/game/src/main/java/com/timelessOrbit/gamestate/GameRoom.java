@@ -174,7 +174,7 @@ public class GameRoom {
 		Collections.shuffle(drawPile);
 
 		// Deal 5 cards one by one in rotation
-		for (int round = 0; round < 5; round++) {
+		for (int round = 0; round < 2; round++) {
 			for (Player p : players) {
 				p.getHand().add(drawPile.remove(0));
 			}
@@ -191,6 +191,7 @@ public class GameRoom {
 		System.out.println("inside game room: " + card);
 		System.out.println("current player : " + player.getUsername());
 		Card top = discardPile.get(discardPile.size() - 1);
+		System.out.println("Jai Jinendra : "+ getSaidJaiJinendra());
 		
 		// Only allow if it's the player's turn
 		if (player != getCurrentPlayer()) {
@@ -200,6 +201,7 @@ public class GameRoom {
 				if(engine.isValidMove(card, top)) {
 					discardPile.add(card);
 					boolean success = player.removeCard(card);
+					
 					if(success == false) {
 						winner = resolveEndgame();
 					}

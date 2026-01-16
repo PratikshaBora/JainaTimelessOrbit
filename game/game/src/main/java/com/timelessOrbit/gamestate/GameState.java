@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.catalina.Engine;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -151,28 +152,10 @@ public class GameState {
 
 		return dto;
 	}
-
-//	public Player checkAndHandleGameOver(int roomId) {
-//	    GameRoom room = gameRooms.get(roomId);
-//	    // 1. Check if game is over
-//	    if (!room.isGameOver()) {
-//	        return null; // game still running
-//	    }
-//	    // 2. Determine winner
-//	    Player winner = room.getWinner();
-//	    // 3. Announce winner (server-side log)
-//	    System.out.println("🏁 Game Over in Room " + roomId +". Winner: " + winner.getUsername());
-//	    // 4. Cleanup room
-//	    endRoom(roomId);
-//	    // 5. Return winner to caller (UI, network, etc.)
-//	    return winner;
-//	}
-
 	// Access past scores
 	public List<PlayerScore> getPastScores() {
 		return repository.findAll();
 	}
-
 	public void playCard(int roomId, int playerId, Card card) {
 		GameRoom room = gameRooms.get(roomId);
 		// Find the player inside the room
@@ -193,10 +176,11 @@ public class GameState {
 		}
 	}
 
-	public void drawCards(int roomId, GameMove move) {
+	public void drawCards(int roomId, GameMove move,boolean val) {
 		GameRoom room = gameRooms.get(roomId);
 		// Find the player inside the room
 		Player player = room.players.stream().filter(p -> p.getId() == move.getPlayerId()).findFirst().get(); // room.players.get(move.getPlayerId());
+		player.setPenalty(val);
 		System.out.println("(Inside game state => Player : " + player.getUsername());
 		room.drawCards(player);
 		GameRoomDTO dto = convertToDTO(room);
@@ -205,6 +189,8 @@ public class GameState {
 			System.out.println("🎉 Winner is: " + room.winner.getUsername());
 			messagingTemplate.convertAndSend("/topic/scoreboard", room.playerScore);
 		}
+		if(player.isPenalty())
+			room.getGameEngine().nextPlayer();
 	}
 
 	public List<GameRoom> getGameRooms() {

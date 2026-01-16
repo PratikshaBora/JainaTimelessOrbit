@@ -63,39 +63,15 @@ public class GameController {
 // --- Core gameplay: always broadcast GameRoomDTO to /topic/game/{roomId} ---
     @MessageMapping("/game/{roomId}/play")
     public void playCard(@DestinationVariable int roomId, GameMove move) {
-    	System.out.println("inside controller for play card");
-    	
 //    	if(!gameState.getGameRooms().contains(move.getRoomId())) return;
-    	
-    	GameRoom room = gameState.getGameRooms().get(move.getRoomId());
-    	if(gameState.getGameRooms().contains(room)) {
-    	room.setGameEngine(room);
-
-        // Apply move (validate inside GameState/Engine as needed)
         gameState.playCard(move.getRoomId(), move.getPlayerId(), move.getCard());
-
-//        GameRoomDTO dto = gameState.convertToDTO(room);
-////        System.out.println("current discard pile card : "+dto.getDiscardPile().get(dto.getDiscardPile().size()-1));
-//        messagingTemplate.convertAndSend("/topic/game/" + roomId, dto);
-//        if (room.winner != null && room.playerScore != null) {
-//	        System.out.println("🎉 Winner is: " + room.winner.getUsername());
-//	        messagingTemplate.convertAndSend("/topic/scoreboard", room.playerScore);
-//	    }
-        }
+//        }
     }
     
     @MessageMapping("/game/{roomId}/draw")
     public void drawCard(@DestinationVariable int roomId, GameMove move) {
 //    	if(!gameState.getGameRooms().contains(move.getRoomId())) return;
-    	GameRoom room = gameState.getGameRooms().get(move.getRoomId());
-        room.setGameEngine(room);
-        gameState.drawCards(roomId,move);
-//        GameRoomDTO dto = gameState.convertToDTO(room);
-//        messagingTemplate.convertAndSend("/topic/game/" + roomId, dto);
-//        if (room.winner != null && room.playerScore != null) {
-//	        System.out.println("🎉 Winner is: " + room.winner.getUsername());
-//	        messagingTemplate.convertAndSend("/topic/scoreboard", room.playerScore);
-//	    }
+        gameState.drawCards(roomId,move,false);
     }
     @MessageMapping("/game/{roomId}/jaiJinendra")
     public void jaiJinendra(@DestinationVariable int roomId, GameMove move) {
@@ -103,13 +79,22 @@ public class GameController {
         if (room != null) {
             // Mark the player as having said JJ
             room.setSaidJaiJinendra(true);
-
             // Create a DTO or simple message
-            String message = move.getPlayerId() + " has declared Jai Jinendra!";
-
+            String message = room.players.get(move.getPlayerId()).getUsername() + " has declared Jai Jinendra!";
             // Broadcast to all players in the room
-            messagingTemplate.convertAndSend("/topic/game/" + roomId + "/jaiJinendra", message);
+            System.out.println(room.players.get(move.getPlayerId()).getUsername()+" declared jai jinendra");
+//            messagingTemplate.convertAndSend("/topic/game/" + roomId + "/jaiJinendra", message);
         }
+    }
+    @MessageMapping("/game/{roomId}/autoPenaltyDraw")
+    public void autoPenaltyDraw(@DestinationVariable int roomId, GameMove move) {
+    	System.out.println("inside auto penalty method");
+    	gameState.drawCards(roomId,move,true);
+    }
+    @MessageMapping("/app/game/{roomId}/jjTimeoutPenalty")
+    public void jjTimeoutPenalty(@DestinationVariable int roomId, GameMove move) {
+    	System.out.println("inside jai jinendra penalty method");
+    	gameState.drawCards(roomId,move,true);
     }
     @GetMapping("/room/{id}")
     public GameRoomDTO getRoom(@PathVariable int id) {

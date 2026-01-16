@@ -13,6 +13,7 @@ public class Player {
 	public List<Card> hand;
 	private int handCount;
 	private boolean saidJaiJinendra;
+	private boolean penalty;
 
 	// --- Constructors ---
 	public Player() {
@@ -30,6 +31,7 @@ public class Player {
 		this.hand = (hand != null) ? new ArrayList<>(hand) : new ArrayList<>();
 		this.handCount = this.hand.size(); // ✅ reflect actual hand size
 		this.saidJaiJinendra = false; // ✅ initialize consistently
+		this.penalty = false;
 	}
 
 	// --- Getters & Setters ---
@@ -108,6 +110,12 @@ public class Player {
 
 	public void setSaidJaiJinendra(boolean value) {
 		this.saidJaiJinendra = value;
+	}
+	public boolean isPenalty() {
+		return penalty;
+	}
+	public void setPenalty(boolean penalty) {
+		this.penalty = penalty;
 	}
 
 	@Override

@@ -173,30 +173,109 @@ $aara-colors: (
 }
 /* --- CARD DEALING & HAND --- */
 .hand {
-  display: flex; justify-content: center; align-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
   .my-playable-card {
-    width: 100px; height: 145px; margin-left: -40px; border-radius: 8px;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    width: 100px;
+    height: 145px;
+    margin-left: -40px;
+    border-radius: 8px;
+    /* Smooth transition for existing cards when they shift left/right */
+    transition: all 0.4s ease-out;
+
     img { width: 100%; height: 100%; border-radius: 8px; }
     &:first-child { margin-left: 0; }
     &:hover { transform: translateY(-30px) scale(1.1); z-index: 100; }
   }
+
+  /* Only animate the card that was just added to the end of the hand */
+  .my-playable-card:last-child {
+    animation: dealFromDeck 0.5s cubic-bezier(0.165, 0.84, 0.44, 1) backwards;
+  }
 }
 
-.dealing-anim { animation: deal 0.5s cubic-bezier(0.165, 0.84, 0.44, 1) backwards; }
-@keyframes deal {
-  0% { opacity: 0; transform: translate(-50vw, -40vh) scale(0.2) rotate(90deg); }
-  100% { opacity: 1; transform: translate(0, 0) scale(1) rotate(0deg); }
+@keyframes dealFromDeck {
+  0% {
+    opacity: 0;
+    /* Changed from -50vw (left) to 0 (center) and -60vh (top) */
+    transform: translate(0, -60vh) scale(0.2) rotate(15deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
 }
 
-/* --- INDICATORS --- */
+/* Optional: Subtle glow for playable cards */
+.playable-glow {
+  box-shadow: 0 0 15px 5px rgba(255, 193, 7, 0.6);
+  border: 1px solid #ffc107;
+}
+
+/* --- BASE INDICATOR & GLOW --- */
 .turn-indicator-arrow {
-  position: absolute; top: -35px; font-size: 1.5rem;
-  animation: bounce 1.5s infinite;
+  position: absolute;
+  font-size: 3rem; /* Larger size */
+  color: #ffc107;
+  z-index: 100;
+
+  /* Glowing Text Effect */
+  text-shadow: 0 0 10px rgba(255, 193, 7, 0.8),
+               0 0 20px rgba(255, 193, 7, 0.5);
+  filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.4));
 }
 
-@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+/* TOP OPPONENT: Pointing Right (▶) */
+.arrow-top {
+  left: -50px; /* Positioned to the left of the container */
+  top: 50%;
+  transform: translateY(-50%);
+  animation: bounce-right 1.2s infinite;
+}
 
+/* LEFT & RIGHT OPPONENTS: Pointing Down (▼) */
+.arrow-side {
+  top: -60px; /* Positioned above the cards */
+  left: 50%;
+  transform: translateX(-50%);
+  animation: bounce-down 1.2s infinite;
+}
+
+/* --- ANIMATIONS --- */
+
+/* Horizontal Bounce for Top Player */
+@keyframes bounce-right {
+  0%, 100% {
+    transform: translateY(-50%) translateX(0);
+    filter: brightness(1);
+  }
+  50% {
+    transform: translateY(-50%) translateX(15px);
+    filter: brightness(1.5) drop-shadow(0 0 15px #ffc107);
+  }
+}
+
+/* Vertical Bounce for Left/Right Players */
+@keyframes bounce-down {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0);
+    filter: brightness(1);
+  }
+  50% {
+    transform: translateX(-50%) translateY(15px);
+    filter: brightness(1.5) drop-shadow(0 0 15px #ffc107);
+  }
+}
+
+/* Active Glow for the Box */
+.active-glow {
+  border: 2px solid #ffc107 !important;
+  box-shadow: 0 0 20px rgba(255, 193, 7, 0.4),
+              inset 0 0 10px rgba(255, 193, 7, 0.2);
+  transition: all 0.3s ease-in-out;
+}
 /* --- CENTER PILES --- */
 .center-area { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); }
 .piles-wrapper { display: flex; gap: 20px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 20px; }
@@ -205,4 +284,63 @@ $aara-colors: (
 
 /* --- BUTTONS --- */
 .action-wrapper { position: absolute; right: 20px; bottom: 20px; }
-.jj-button { --border-radius: 20px; font-weight: bold; }
+.jj-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.jj-circle-button {
+  /* Ionic specific variables to force a circle */
+  --border-radius: 50%;
+  --padding-start: 0;
+  --padding-end: 0;
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --background: transparent;
+  --box-shadow: none;
+
+  width: 80px;
+  height: 80px;
+  margin-bottom: 8px;
+
+  img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: contain;
+    border: 2px solid #ffc107; /* Matches your 'warning' theme */
+    display: block;
+  }
+}
+
+.jj-text {
+  font-weight: 600;
+  color: #444;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* The Pulse Animation */
+.vibrant-pulse {
+  animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 15px rgba(255, 193, 7, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+  }
+}
+
+
