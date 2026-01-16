@@ -3,6 +3,7 @@ package com.timelessOrbit.gamestate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -147,79 +148,76 @@ public class GameState {
 
 		return dto;
 	}
+
 	// Access past scores
 	public List<PlayerScore> getPastScores() {
-		pastScores=repository.findAll();
+		pastScores = repository.findAll();
 		return pastScores;
 	}
-	
+
 	public void playCard(int roomId, int playerId, Card card) {
-	    GameRoom room = gameRooms.get(roomId);
-	    if (room == null) {
-	        System.out.println("Room not found: " + roomId);
-	        return;
-	    }
+		GameRoom room = gameRooms.get(roomId);
+		if (room == null) {
+			System.out.println("Room not found: " + roomId);
+			return;
+		}
 
-	    // Find player by ID
-	    Player player = room.getPlayers().stream()
-	                        .filter(p -> p.getId() == playerId)
-	                        .findFirst()
-	                        .orElse(null);
+		// Find player by ID
+		Player player = room.getPlayers().stream().filter(p -> p.getId() == playerId).findFirst().orElse(null);
 
-	    if (player == null) {
-	        System.out.println("Player not found in room: " + playerId);
-	        return;
-	    }
+		if (player == null) {
+			System.out.println("Player not found in room: " + playerId);
+			return;
+		}
 
-	    System.out.println("Inside game state => Player : " + player.getUsername());
+		System.out.println("Inside game state => Player : " + player.getUsername());
 
-	    // Apply move
-	    room.playCard(player, card);
+		// Apply move
+		room.playCard(player, card);
 
-	    // Broadcast updated room state
-	    GameRoomDTO dto = convertToDTO(room);
-	    messagingTemplate.convertAndSend("/topic/game/" + roomId, dto);
+		// Broadcast updated room state
+		GameRoomDTO dto = convertToDTO(room);
+		messagingTemplate.convertAndSend("/topic/game/" + roomId, dto);
 
-	    // If winner exists, broadcast scoreboard
-	    if (room.winner != null && room.playerScore != null) {
-	        System.out.println("🎉 Winner is: " + room.winner.getUsername());
-	        messagingTemplate.convertAndSend("/topic/scoreboard", room.playerScore);
-	    }
+		// If winner exists, broadcast scoreboard
+		if (room.winner != null && room.playerScore != null) {
+			System.out.println("🎉 Winner is: " + room.winner.getUsername());
+			messagingTemplate.convertAndSend("/topic/scoreboard", room.playerScore);
+			// ⏳ Schedule auto-end broadcast
+		}
 	}
 
 	public void drawCards(int roomId, GameMove move, boolean val) {
-	    GameRoom room = gameRooms.get(roomId);
-	    if (room == null) {
-	        System.out.println("Room not found: " + roomId);
-	        return;
-	    }
+		GameRoom room = gameRooms.get(roomId);
+		if (room == null) {
+			System.out.println("Room not found: " + roomId);
+			return;
+		}
 
-	    Player player = room.getPlayers().stream()
-	                        .filter(p -> p.getId() == move.getPlayerId())
-	                        .findFirst()
-	                        .orElse(null);
+		Player player = room.getPlayers().stream().filter(p -> p.getId() == move.getPlayerId()).findFirst()
+				.orElse(null);
 
-	    if (player == null) {
-	        System.out.println("Player not found: " + move.getPlayerId());
-	        return;
-	    }
+		if (player == null) {
+			System.out.println("Player not found: " + move.getPlayerId());
+			return;
+		}
 
-	    player.setPenalty(val);
-	    System.out.println("(Inside game state => Player : " + player.getUsername());
+		player.setPenalty(val);
+		System.out.println("(Inside game state => Player : " + player.getUsername());
 
-	    room.drawCards(player);
+		room.drawCards(player);
 
-	    GameRoomDTO dto = convertToDTO(room);
-	    messagingTemplate.convertAndSend("/topic/game/" + roomId, dto);
+		GameRoomDTO dto = convertToDTO(room);
+		messagingTemplate.convertAndSend("/topic/game/" + roomId, dto);
 
-	    if (room.winner != null && room.playerScore != null) {
-	        System.out.println("🎉 Winner is: " + room.winner.getUsername());
-	        messagingTemplate.convertAndSend("/topic/scoreboard", room.playerScore);
-	    }
+		if (room.winner != null && room.playerScore != null) {
+			System.out.println("🎉 Winner is: " + room.winner.getUsername());
+			messagingTemplate.convertAndSend("/topic/scoreboard", room.playerScore);
+			// ⏳ Schedule auto-end broadcast
+		}
 	}
 
 	public List<GameRoom> getGameRooms() {
-		// TODO Auto-generated method stub
 		return gameRooms;
 	}
 
@@ -254,8 +252,41 @@ public class GameState {
 		return new ArrayList<>(waitingPlayers);
 	}
 
+//	public void scheduleEndRoom(GameRoom room) {
+//		int roomId = room.getId();
+//		scheduler.schedule(() -> {
+//			System.out.println("⏳ Auto-ending room " + roomId);
+//			messagingTemplate.convertAndSend("/topic/game/" + roomId + "/end",
+//					"Room " + roomId + " has ended. Returning to home.");
+//			endRoom(roomId);
+//		}, 3, TimeUnit.MINUTES);
+//	}
+	
+	@Scheduled(fixedRate = 30000) // runs every 30 seconds
+	public void scheduledEndRoomCheck() {
+	    long now = System.currentTimeMillis();
+
+	    for (GameRoom room : new ArrayList<>(gameRooms)) {
+	        if (room.getEndedAt() != null) {
+	            long elapsed = now - room.getEndedAt()
+	                .atZone(java.time.ZoneId.systemDefault())
+	                .toInstant().toEpochMilli();
+
+	            if (elapsed >= 3 * 60 * 1000) { // 3 minutes
+	                System.out.println("⏳ Auto-ending room " + room.getId());
+	                messagingTemplate.convertAndSend(
+	                    "/topic/game/" + room.getId() + "/end",
+	                    "Room " + room.getId() + " has ended. Returning to home."
+	                );
+	                endRoom(room.getId()); // remove room
+	            }
+	        }
+	    }
+	}
+
 	public void endRoom(int roomId) {
-//		GameRoom room = gameRooms.get(roomId);
-		gameRooms.remove(roomId); // mark as ended
+		if (roomId >= 0 && roomId < gameRooms.size()) {
+			gameRooms.remove(roomId);
+		}
 	}
 }

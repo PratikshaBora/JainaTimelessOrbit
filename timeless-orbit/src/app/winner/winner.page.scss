@@ -1,36 +1,139 @@
-.leave-room-container {
-  margin: 20px;
-  text-align: center;
-}
 .page-background {
-  --background: linear-gradient(135deg, #fff8e7, #fbe4c4); // cream + soft orange
+  --background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+  background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
 }
 
-.glass {
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 16px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(210, 140, 70, 0.3); // orange-brown accent
-  padding: 20px;
-  margin: 20px;
-  animation: fadeIn 1s ease-in-out;
-}
-
-.winner-banner {
-  font-size: 1.5rem;
-  margin-bottom: 20px;
+/* Winner Banner Section */
+.winner-section {
   text-align: center;
-  color: #a0522d; // warm brown
+  padding: 40px 20px 20px;
+  color: white;
+
+  .trophy-wrapper {
+    position: relative;
+    display: inline-block;
+
+    .crown-icon {
+      font-size: 40px;
+      position: absolute;
+      top: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      animation: bounce 2s infinite;
+    }
+
+    .winner-avatar {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 5px solid #ffc107;
+      box-shadow: 0 0 30px rgba(255, 193, 7, 0.8);
+      background: white;
+    }
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 10px 0;
+    text-shadow: 2px 4px 10px rgba(0,0,0,0.5);
+    color: #ffc107;
+  }
 }
 
-.winner-row {
-  background: rgba(255, 200, 120, 0.3); // saffron highlight
-  border: 2px solid goldenrod;
-  border-radius: 12px;
+/* Badges and Stats */
+.badge {
+  padding: 6px 15px;
+  border-radius: 20px;
+  margin: 0 5px;
+  font-weight: bold;
+  &.rank { background: #4a90e2; }
+  &.points { background: #673ab7; }
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
+.bonus-text {
+  font-size: 1.1rem;
+  color: #fff;
+  margin-top: 15px;
+  animation: pulse 1.5s infinite;
+}
+
+/* Scoreboard Styling */
+.scoreboard-card {
+  --background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  margin: 20px;
+  color: white;
+
+  .header-row {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    font-weight: bold;
+    color: #ffc107;
+    padding-bottom: 10px;
+  }
+
+  .score-row {
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    align-items: center;
+
+    &.first-place {
+      background: rgba(255, 193, 7, 0.2);
+      border-radius: 10px;
+      color: #ffc107;
+      font-weight: bold;
+    }
+  }
+}
+
+/* Footer Buttons */
+.action-footer {
+  display: flex;
+  justify-content: space-around;
+  padding: 20px;
+  gap: 10px;
+
+  ion-button {
+    --border-radius: 12px;
+    font-weight: bold;
+    flex: 1;
+  }
+}
+
+/* --- ANIMATIONS --- */
+
+@keyframes bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-15px); }
+}
+
+@keyframes pulse {
+  0% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0.8; transform: scale(1); }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Confetti Petals */
+.petal {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: gold;
+  border-radius: 50%;
+  animation: fall 5s linear infinite;
+}
+
+@keyframes fall {
+  to { transform: translateY(100vh) rotate(360deg); }
 }

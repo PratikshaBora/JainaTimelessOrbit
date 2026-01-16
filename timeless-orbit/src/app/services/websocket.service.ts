@@ -28,6 +28,9 @@ export class WebsocketService {
   private messageSubject = new BehaviorSubject<string | null>(null);
   public messageSubject$ = this.messageSubject.asObservable();
 
+  private endRoomSubject = new BehaviorSubject<string | null>(null);
+  endRoom$ = this.endRoomSubject.asObservable();
+
   // --- Connection setup ---
   connect(callback: Function | null = null) {
     if (this.connected) {
@@ -128,6 +131,13 @@ export class WebsocketService {
     return this.stompClient.subscribe(`/user/queue/room`, message => {
       const room: GameRoomDTO = JSON.parse(message.body);
       callback(room);
+    });
+  }
+
+  subscribeToEndRoom(roomId: number) {
+    this.stompClient?.subscribe(`/topic/game/${roomId}/end`, (message: IMessage) => {
+      console.log("End room broadcast:", message.body);
+      this.endRoomSubject.next(message.body);
     });
   }
 

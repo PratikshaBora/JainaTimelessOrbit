@@ -32,7 +32,7 @@ export class WinnerPage implements OnInit {
 
   leaveRoom() {
     clearTimeout(this.endRoomTimer); // stop auto-end for this user
-    this.router.navigate(['/lobby'], { state: { fromWinner: true } });
+    this.router.navigate(['/home'], { state: { fromWinner: true } });
   }
 
   endRoom() {
@@ -40,6 +40,6 @@ export class WinnerPage implements OnInit {
     // Optionally notify backend to close room for all players
     // this.wsService.endRoom(this.roomId);
 
-    this.router.navigate(['/lobby'], { state: { fromWinner: true } });
+    this.router.navigate(['/home'], { state: { fromWinner: true } });
   }
 }

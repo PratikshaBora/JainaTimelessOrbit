@@ -1,58 +1,60 @@
-<!-- Leave Room Button -->
-<div class="leave-room-container">
-  <ion-button expand="block" color="danger" (click)="leaveRoom()">
-    🚪 Leave Room & Return to Lobby
-  </ion-button>
-</div>
-
-<ion-header>
-  <ion-toolbar color="light">
-    <ion-title>🏆 Divine Scoreboard</ion-title>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content class="page-background">
-  <!-- Winner Banner -->
-  <div class="winner-banner glass" *ngIf="winner">
-    🌼 Winner: {{ winner.username }} 👑
-    <p>
-      Rank: {{ winner.rank }} | Points: {{ winner.points }}
-      <br>
-      Bonus: {{ winner.bonus }}
-    </p>
+  <div class="confetti-container">
+    <div class="petal" *ngFor="let i of [1,2,3,4,5,6]"></div>
   </div>
 
-  <!-- Scoreboard -->
-  <ion-card class="glass">
+  <div class="winner-section fade-in-up" *ngIf="winner">
+    <div class="trophy-wrapper">
+      <div class="crown-icon">👑</div>
+      <img src="assets/winner-medal.png" class="winner-avatar" onerror="this.src='assets/default-avatar.png'">
+    </div>
+
+    <div class="winner-announcement">
+      <h1>{{ winner.username }}</h1>
+      <div class="winner-stats">
+        <span class="badge rank">Rank: {{ winner.rank }}</span>
+        <span class="badge points">Points: {{ winner.points }}</span>
+      </div>
+      <p class="bonus-text">✨ Divine Bonus: {{ winner.bonus }} ✨</p>
+    </div>
+  </div>
+
+  <ion-card class="glass scoreboard-card fade-in-delayed">
     <ion-card-header>
-      <ion-card-title>Final Scores</ion-card-title>
+      <ion-card-title class="ion-text-center">Final Standings</ion-card-title>
     </ion-card-header>
 
     <ion-card-content>
-      <ion-grid>
-        <!-- Table header -->
-        <ion-row>
-          <ion-col><strong>Player</strong></ion-col>
-          <ion-col><strong>Score</strong></ion-col>
-          <ion-col><strong>Rank</strong></ion-col>
-          <ion-col><strong>Bonus</strong></ion-col>
-        </ion-row>
+      <div class="table-container">
+        <ion-grid>
+          <ion-row class="header-row">
+            <ion-col size="5">Player</ion-col>
+            <ion-col size="2">Pts</ion-col>
+            <ion-col size="2">Rank</ion-col>
+            <ion-col size="3">Bonus</ion-col>
+          </ion-row>
 
-        <!-- Table rows -->
-        <ion-row *ngFor="let s of scores; let i = index" [class.winner-row]="i === 0">
-          <ion-col>{{ s.username }}</ion-col>
-          <ion-col>{{ s.points }}</ion-col>
-          <ion-col>{{ s.rank }}</ion-col>
-          <ion-col>{{ s.bonus }}</ion-col>
-        </ion-row>
-
-        <!-- Empty state -->
-        <ion-row *ngIf="scores.length === 0">
-          <ion-col size="12" class="ion-text-center">
-            <em>No scores yet — waiting for game results</em>
-          </ion-col>
-        </ion-row>
-      </ion-grid>
+          <ion-row *ngFor="let s of scores; let i = index"
+                   class="score-row"
+                   [class.first-place]="i === 0">
+            <ion-col size="5" class="player-name">
+              <span class="rank-number">{{i + 1}}</span> {{ s.username }}
+            </ion-col>
+            <ion-col size="2">{{ s.points }}</ion-col>
+            <ion-col size="2">{{ s.rank }}</ion-col>
+            <ion-col size="3" class="bonus-val">+{{ s.bonus }}</ion-col>
+          </ion-row>
+        </ion-grid>
+      </div>
     </ion-card-content>
   </ion-card>
+
+  <div class="action-footer">
+    <ion-button fill="outline" color="light" (click)="leaveRoom()" class="btn-leave">
+      Leave Room
+    </ion-button>
+    <ion-button color="danger" (click)="endRoom()" class="btn-end">
+      End Game
+    </ion-button>
+  </div>
 </ion-content>

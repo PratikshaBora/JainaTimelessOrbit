@@ -20,6 +20,7 @@ import com.timelessOrbit.gamestate.GameRoom;
 import com.timelessOrbit.gamestate.GameRoomDTO;
 import com.timelessOrbit.gamestate.GameState;
 import com.timelessOrbit.gamestate.Player;
+import com.timelessOrbit.gamestate.PlayerDTO;
 
 @Controller
 @CrossOrigin(origins = "http://localhost:8100",allowCredentials = "true")
@@ -71,7 +72,7 @@ public class GameController {
             // Mark the player as having said JJ
             room.setSaidJaiJinendra(true);
             // Create a DTO or simple message
-            String message = room.players.get(move.getPlayerId()).getUsername() + " has declared Jai Jinendra!";
+//            String message = room.players.get(move.getPlayerId()).getUsername() + " has declared Jai Jinendra!";
             // Broadcast to all players in the room
             System.out.println(room.players.get(move.getPlayerId()).getUsername()+" declared jai jinendra");
           // messagingTemplate.convertAndSend("/topic/game/" + roomId + "/jaiJinendra", message);
@@ -94,5 +95,28 @@ public class GameController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found");
         }
         return room.toDTO(); // convert to GameRoomDTO
+    }
+    @MessageMapping("/game/{roomId}/leave")
+    public void leaveRoom(@DestinationVariable int roomId, PlayerDTO player) {
+        GameRoom room = gameState.getRoom(roomId);
+        if (room == null) {
+            System.out.println("Room not found: " + roomId);
+            return;
+        }
+
+        // Remove player from room
+        String result = room.removePlayer(player.getId());
+        System.out.println("Player leaving room: " + result);
+
+        // Broadcast updated room state
+        GameRoomDTO dto = gameState.convertToDTO(room);
+        messagingTemplate.convertAndSend("/topic/game/" + roomId, dto);
+
+        // If room becomes empty, end it
+        if (room.getPlayers().isEmpty()) {
+            gameState.endRoom(roomId);
+            messagingTemplate.convertAndSend("/topic/game/" + roomId + "/end",
+                "Room " + roomId + " has ended. Returning to home.");
+        }
     }
 }

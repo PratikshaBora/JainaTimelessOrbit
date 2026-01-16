@@ -129,8 +129,8 @@ export class RoomPage implements OnInit, OnDestroy {
 
         console.log("Final scoreboard with ranks:", sorted);
 
-        // Navigate to scoreboard page with data
-        this.router.navigate(['/winner'], { state: { scores: sorted } });
+        // ✅ Use this.roomId instead of newRoom.roomId
+        this.router.navigate(['/winner'], { state: { scores: sorted, roomId: this.roomId } });
       }
     });
 
@@ -382,10 +382,12 @@ export class RoomPage implements OnInit, OnDestroy {
   }
 
   leaveRoom(): void {
-    this.wsService.disconnect();
-    this.router.navigate(['/home']);
+    this.wsService.sendMessage(
+      { roomId: this.roomId, playerId: this.myPlayerId },
+      `/app/game/${this.roomId}/leave`
+    );
+    this.router.navigate(['/home'], { state: { fromRoom: true } });
   }
-
   // --- Timers ---
   private startTurnTimer(): void {
     clearInterval(this.turnInterval);

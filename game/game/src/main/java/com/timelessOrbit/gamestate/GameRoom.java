@@ -259,14 +259,27 @@ public class GameRoom {
 		return null;
 	}
 
-	public String removePlayer(int pid) {
-		for (Player player : new ArrayList<>(players)) { // avoid ConcurrentModification
-			if (player.getId() == pid) {
-				players.remove(player); // ✅ remove by object, not index
-				return player.getUsername() + " left the room.";
-			}
-		}
-		return null;
+//	public String removePlayer(int pid) {
+//		for (Player player : new ArrayList<>(players)) { // avoid ConcurrentModification
+//			if (player.getId() == pid) {
+//				players.remove(player); // ✅ remove by object, not index
+//				return player.getUsername() + " left the room.";
+//			}
+//		}
+//		return null;
+//	}
+	
+	public String removePlayer(int playerId) {
+	    Player toRemove = players.stream()
+	        .filter(p -> p.getId() == playerId)
+	        .findFirst()
+	        .orElse(null);
+
+	    if (toRemove != null) {
+	        players.remove(toRemove);
+	        return toRemove.getUsername() + " left the room.";
+	    }
+	    return null;
 	}
 
 	public int calculatePoints(Player p) {
