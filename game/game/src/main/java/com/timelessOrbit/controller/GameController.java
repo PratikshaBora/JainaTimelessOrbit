@@ -7,27 +7,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.timelessOrbit.gamestate.GameMove;
 import com.timelessOrbit.gamestate.GameRoom;
 import com.timelessOrbit.gamestate.GameRoomDTO;
 import com.timelessOrbit.gamestate.GameState;
-import com.timelessOrbit.gamestate.GameUpdate;
 import com.timelessOrbit.gamestate.Player;
-import com.timelessOrbit.gamestate.PlayerScore;
-import com.timelessOrbit.gamestate.GameEngine;
-import com.timelessOrbit.gamestate.Card;
-import com.timelessOrbit.gamestate.AaraChangeMove;
-
 
 @Controller
 @CrossOrigin(origins = "http://localhost:8100",allowCredentials = "true")
@@ -65,7 +57,6 @@ public class GameController {
     public void playCard(@DestinationVariable int roomId, GameMove move) {
 //    	if(!gameState.getGameRooms().contains(move.getRoomId())) return;
         gameState.playCard(move.getRoomId(), move.getPlayerId(), move.getCard());
-//        }
     }
     
     @MessageMapping("/game/{roomId}/draw")
@@ -83,7 +74,7 @@ public class GameController {
             String message = room.players.get(move.getPlayerId()).getUsername() + " has declared Jai Jinendra!";
             // Broadcast to all players in the room
             System.out.println(room.players.get(move.getPlayerId()).getUsername()+" declared jai jinendra");
-//            messagingTemplate.convertAndSend("/topic/game/" + roomId + "/jaiJinendra", message);
+          // messagingTemplate.convertAndSend("/topic/game/" + roomId + "/jaiJinendra", message);
         }
     }
     @MessageMapping("/game/{roomId}/autoPenaltyDraw")

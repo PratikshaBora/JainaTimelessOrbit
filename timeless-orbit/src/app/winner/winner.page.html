@@ -1,3 +1,10 @@
+<!-- Leave Room Button -->
+<div class="leave-room-container">
+  <ion-button expand="block" color="danger" (click)="leaveRoom()">
+    🚪 Leave Room & Return to Lobby
+  </ion-button>
+</div>
+
 <ion-header>
   <ion-toolbar color="light">
     <ion-title>🏆 Divine Scoreboard</ion-title>
@@ -8,7 +15,11 @@
   <!-- Winner Banner -->
   <div class="winner-banner glass" *ngIf="winner">
     🌼 Winner: {{ winner.username }} 👑
-    <p>Rank: {{ getRank(winner.id) }} | Points: {{ winner.points }}</p>
+    <p>
+      Rank: {{ winner.rank }} | Points: {{ winner.points }}
+      <br>
+      Bonus: {{ winner.bonus }}
+    </p>
   </div>
 
   <!-- Scoreboard -->
@@ -24,13 +35,15 @@
           <ion-col><strong>Player</strong></ion-col>
           <ion-col><strong>Score</strong></ion-col>
           <ion-col><strong>Rank</strong></ion-col>
+          <ion-col><strong>Bonus</strong></ion-col>
         </ion-row>
 
         <!-- Table rows -->
         <ion-row *ngFor="let s of scores; let i = index" [class.winner-row]="i === 0">
           <ion-col>{{ s.username }}</ion-col>
           <ion-col>{{ s.points }}</ion-col>
-          <ion-col>{{ getRank(s.id) }}</ion-col>
+          <ion-col>{{ s.rank }}</ion-col>
+          <ion-col>{{ s.bonus }}</ion-col>
         </ion-row>
 
         <!-- Empty state -->

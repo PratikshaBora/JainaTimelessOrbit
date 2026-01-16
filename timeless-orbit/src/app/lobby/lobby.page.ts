@@ -24,6 +24,9 @@ export class LobbyPage implements OnInit {
   ngOnInit() {
     console.log('LobbyPage initialized — subscribing to lobby updates');
 
+    const nav = this.router.getCurrentNavigation();
+    const state = nav?.extras.state as { fromWinner?: boolean };
+
     const currentUser = this.playerService.getCurrentUser();
     if (!currentUser) {
       console.warn('No current user found, redirecting to login...');
@@ -56,6 +59,11 @@ export class LobbyPage implements OnInit {
     });
 
     this.wsService.rooms$.subscribe((rooms: GameRoomDTO[]) => {
+      if (state?.fromWinner) {
+        console.log('Returned from winner page — skipping auto-join');
+        return;
+      }
+
       const newRoom = rooms[rooms.length - 1];
 
       // ✅ Only navigate if current user is in that room

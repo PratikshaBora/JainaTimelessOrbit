@@ -196,57 +196,64 @@ public class GameRoom {
 		// Only allow if it's the player's turn
 		if (player != getCurrentPlayer()) {
 			System.out.println("player not matched");
-		} else {
-			if (player.getHand().size() == 1 && saidJaiJinendra == true) {
-				if (engine.isValidMove(card, top)) {
-					discardPile.add(card);
-					boolean success = player.removeCard(card);
-
-					if (success == false) {
-						winner = resolveEndgame();
-					}
-				} else {
-					drawCards(player);
-				}
-			} else {
-				System.out.println("Checking : " + card + " with " + top);
-
-				if (engine.isValidMove(card, top)) {
-					boolean success = player.removeCard(card);
-					if (success == false) {
-						winner = resolveEndgame();
-					} else {
-						System.out.println("In hand cards : " + player.hand.size());
-						System.out.println("current hand card no : " + player.getHandCount());
-						discardPile.add(card);
-						setCurrentAara(discardPile.get(discardPile.size() - 1).aara);
-						System.out.println("current top discard : " + discardPile.get(discardPile.size() - 1));
-						engine.applyAction(card);
-						engine.nextPlayer();
-					}
-				}
-
-			}
+			return;
 		}
 
+		boolean isLastCard = player.getHand().size() == 1;
+
+		// Special JJ case: player must declare before playing last card
+		if (isLastCard && !saidJaiJinendra) {
+			System.out.println("Penalty: player did not declare Jai Jinendra!");
+			drawCards(player);
+			return;
+		}
+
+		// Validate move
+		if (engine.isValidMove(card, top)) {
+			boolean removed = player.removeCard(card);
+
+			if (removed) {
+				discardPile.add(card);
+				setCurrentAara(card.aara);
+				System.out.println("current top discard : " + card);
+
+				engine.applyAction(card);
+
+				// Endgame check
+				if (player.getHand().isEmpty()) {
+					winner = resolveEndgame();
+				} else {
+					engine.nextPlayer();
+				}
+			} else {
+				System.out.println("Card not found in hand!");
+			}
+		} else {
+			System.out.println("Invalid move, drawing cards...");
+			drawCards(player);
+		}
 	}
 
 	public Player drawCards(Player player) {
 		System.out.println("Subscribed player : " + player.getUsername());
 		System.out.println("Current player : " + getCurrentPlayer().getUsername());
+
 		if (player != getCurrentPlayer()) {
-			System.out.println("player not matched");
+			System.out.println("Not this player's turn!");
+			return null; // enforce turn order
 		}
+
 		if (!drawPile.isEmpty()) {
 			Card c = drawPile.remove(0);
-			// add to in hand
 			player.addCard(c);
+
 			if (!engine.isValidMove(c, discardPile.get(discardPile.size() - 1))) {
 				engine.nextPlayer();
 			}
+
 			System.out.println("remaining cards: " + drawPile.size());
 		} else {
-			System.out.println("⚠️ Draw pile empty, cannot draw. Endgame should be resolved.");
+			System.out.println("⚠️ Draw pile empty, resolving endgame.");
 			return resolveEndgame();
 		}
 		return null;
@@ -270,41 +277,52 @@ public class GameRoom {
 		return sum;
 	}
 
-	// Endgame rule: lowest hand count wins, score = sum of others’ points
 	public Player resolveEndgame() {
-		Player winner = null;
-		setEndedAt(LocalDateTime.now()); // ✅ capture end time
+//		Player winner = null;
+		setEndedAt(LocalDateTime.now());
 		activeRoomTime = Duration.between(getCreatedAt(), getEndedAt()).getSeconds();
 		setActiveRoomTime(activeRoomTime);
+
 		int lowestHandPoints = Integer.MAX_VALUE;
 
+		// Step 1: Calculate points for each player
 		for (Player p : players) {
 			int points = calculatePoints(p);
+			p.setPoints(points);
 			if (points < lowestHandPoints) {
 				lowestHandPoints = points;
-				p.setPoints(points);
-				winner = p;
+				this.winner = p;
 			}
 		}
 
-		int bonus = 0;
-		for (Player p : players) {
-			if (p != winner) {
-				for (Card c : p.getHand()) {
-					bonus += c.getPointValue();
-				}
-			}
-		}
+		// Step 2: Calculate bonus = sum of other players’ card values
+		int bonus = players.stream().filter(p -> p != this.winner).flatMap(p -> p.getHand().stream())
+				.mapToInt(Card::getPointValue).sum();
+
+		// Step 3: Assign bonus to winner, 0 to others
 		if (winner != null) {
-			winner.setPoints(winner.getPoints() + bonus); // ✅ use Player.setPoints()
+			winner.setWinningBonus(bonus); // winner gets bonus
+//	        winner.setPoints(winner.getPoints() + bonus); // add bonus to winner’s points
+
+			playerScore.clear(); // avoid duplicates
+
 			for (Player p : getPlayers()) {
 				PlayerScore score = new PlayerScore(p.getId(), p.getUsername(), p.getMobileNumber(), p.getPoints(),
 						p.getRoomId(), activeRoomTime);
+
+				// Assign bonus field correctly
+				if (p == winner) {
+					score.setBonus(bonus);
+				} else {
+					score.setBonus(0);
+				}
+
 				repo.save(score);
 				playerScore.add(score);
 			}
+
+			System.out.println("🏁 Endgame triggered. Winner: " + winner.getUsername() + " with bonus " + bonus);
 		}
-		System.out.println("🏁 Endgame triggered. Winner: " + winner.getUsername() + " with bonus " + bonus);
 
 		return winner;
 	}

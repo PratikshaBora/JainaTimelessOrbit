@@ -113,8 +113,21 @@ export class RoomPage implements OnInit, OnDestroy {
     // ✅ Listen for scoreboard updates
     this.wsService.scoreboard$.subscribe(scores => {
       if (scores && scores.length > 0) {
-        const sorted = [...scores].sort((a, b) => a.points - b.points);
-        console.log("Final scoreboard:", sorted);
+        // Sort by points ascending (lowest = winner)
+        let sorted = [...scores].sort((a, b) => a.points - b.points);
+
+        // Assign ranks (with tie handling)
+        let rank = 1;
+        let lastPoints: number | null = null;
+        sorted = sorted.map((player, index) => {
+          if (player.points !== lastPoints) {
+            rank = index + 1;
+          }
+          lastPoints = player.points;
+          return { ...player, rank };
+        });
+
+        console.log("Final scoreboard with ranks:", sorted);
 
         // Navigate to scoreboard page with data
         this.router.navigate(['/winner'], { state: { scores: sorted } });

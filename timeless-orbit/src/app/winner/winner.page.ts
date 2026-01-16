@@ -11,29 +11,35 @@ import * as confetti from 'canvas-confetti';
 export class WinnerPage implements OnInit {
   scores: any[] = [];
   winner: any;
+  endRoomTimer: any;
 
   constructor(private router: Router) {}
 
   ngOnInit() {
     const nav = this.router.getCurrentNavigation();
     const state = nav?.extras.state as { scores: any[] };
+
     if (state?.scores) {
       this.scores = state.scores;
-      this.winner = this.scores[0]; // ✅ first after sorting is winner
+      this.winner = this.scores[0];
     }
 
-    // 🎉 Trigger confetti when page loads
-    if (this.winner) {
-      confetti({
-        particleCount: 200,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#fff8e7', '#fbe4c4', '#ffcc80', '#d2691e', '#ffd700'] // cream, soft orange, saffron, brown, gold
-      });
-    }
+    // ⏳ Auto-end room after 3 minutes
+    this.endRoomTimer = setTimeout(() => {
+      this.endRoom();
+    }, 3 * 60 * 1000); // 3 minutes
   }
 
-  getRank(playerId: number): number {
-    return this.scores.findIndex(p => p.id === playerId) + 1;
+  leaveRoom() {
+    clearTimeout(this.endRoomTimer); // stop auto-end for this user
+    this.router.navigate(['/lobby'], { state: { fromWinner: true } });
+  }
+
+  endRoom() {
+    clearTimeout(this.endRoomTimer);
+    // Optionally notify backend to close room for all players
+    // this.wsService.endRoom(this.roomId);
+
+    this.router.navigate(['/lobby'], { state: { fromWinner: true } });
   }
 }

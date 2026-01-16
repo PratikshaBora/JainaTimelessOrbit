@@ -14,6 +14,7 @@ public class PlayerScore {
     private int points;
     private int roomId;
     private long activeRoomTime;
+    private int bonus;
 
     public PlayerScore() {
 		super();
@@ -64,7 +65,13 @@ public class PlayerScore {
     public void setActiveRoomTime(long setActiveRoom) {
     	this.activeRoomTime = setActiveRoom;
     }
-    @Override
+    public int getBonus() {
+		return bonus;
+	}
+	public void setBonus(int bonus) {
+		this.bonus = bonus;
+	}
+	@Override
     public String toString() {
         return "PlayerScore [playerId=" + playerId +
                ", username=" + username +

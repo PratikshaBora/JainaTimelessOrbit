@@ -14,6 +14,7 @@ public class Player {
 	private int handCount;
 	private boolean saidJaiJinendra;
 	private boolean penalty;
+	private int winningBonus;
 
 	// --- Constructors ---
 	public Player() {
@@ -88,6 +89,14 @@ public class Player {
 		return this.handCount = this.hand.size();
 	}
 
+	public int getWinningBonus() {
+		return winningBonus;
+	}
+
+	public void setWinningBonus(int winningBonus) {
+		this.winningBonus = winningBonus;
+	}
+
 	// --- Hand management methods ---
 	/** Draw cards from draw pile */
 	public void drawCards(List<Card> cards) {
@@ -125,11 +134,13 @@ public class Player {
 	}
 
 	public boolean removeCard(Card card) {
-		hand.removeIf(c -> c.aara == card.aara && c.dwar == card.dwar);
-		if(hand.size()==0)	
-			return false;
-		return true;
+	    // Try to remove the card
+	    boolean removed = hand.removeIf(c -> c.aara == card.aara && c.dwar == card.dwar);
+
+	    // Return whether removal succeeded
+	    return removed;
 	}
+
 
 	public void addCard(Card c) {
 		hand.add(c);

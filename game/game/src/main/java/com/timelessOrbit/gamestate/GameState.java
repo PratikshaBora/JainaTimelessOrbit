@@ -1,13 +1,8 @@
 package com.timelessOrbit.gamestate;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
-import org.apache.catalina.Engine;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -154,43 +149,73 @@ public class GameState {
 	}
 	// Access past scores
 	public List<PlayerScore> getPastScores() {
-		return repository.findAll();
+		pastScores=repository.findAll();
+		return pastScores;
 	}
+	
 	public void playCard(int roomId, int playerId, Card card) {
-		GameRoom room = gameRooms.get(roomId);
-		// Find the player inside the room
-		Player player = room.players.get(playerId);
-		System.out.println("(Inside game state => Player : " + player.getUsername());
-		for (Player p : room.players) {
-			if (p.getId() == playerId) {
-				player = p;
-				break;
-			}
-		}
-		room.playCard(player, card);
-		GameRoomDTO dto = convertToDTO(room);
-		messagingTemplate.convertAndSend("/topic/game/" + roomId, dto);
-		if (room.winner != null && room.playerScore != null) {
-			System.out.println("🎉 Winner is: " + room.winner.getUsername());
-			messagingTemplate.convertAndSend("/topic/scoreboard", room.playerScore);
-		}
+	    GameRoom room = gameRooms.get(roomId);
+	    if (room == null) {
+	        System.out.println("Room not found: " + roomId);
+	        return;
+	    }
+
+	    // Find player by ID
+	    Player player = room.getPlayers().stream()
+	                        .filter(p -> p.getId() == playerId)
+	                        .findFirst()
+	                        .orElse(null);
+
+	    if (player == null) {
+	        System.out.println("Player not found in room: " + playerId);
+	        return;
+	    }
+
+	    System.out.println("Inside game state => Player : " + player.getUsername());
+
+	    // Apply move
+	    room.playCard(player, card);
+
+	    // Broadcast updated room state
+	    GameRoomDTO dto = convertToDTO(room);
+	    messagingTemplate.convertAndSend("/topic/game/" + roomId, dto);
+
+	    // If winner exists, broadcast scoreboard
+	    if (room.winner != null && room.playerScore != null) {
+	        System.out.println("🎉 Winner is: " + room.winner.getUsername());
+	        messagingTemplate.convertAndSend("/topic/scoreboard", room.playerScore);
+	    }
 	}
 
-	public void drawCards(int roomId, GameMove move,boolean val) {
-		GameRoom room = gameRooms.get(roomId);
-		// Find the player inside the room
-		Player player = room.players.stream().filter(p -> p.getId() == move.getPlayerId()).findFirst().get(); // room.players.get(move.getPlayerId());
-		player.setPenalty(val);
-		System.out.println("(Inside game state => Player : " + player.getUsername());
-		room.drawCards(player);
-		GameRoomDTO dto = convertToDTO(room);
-		messagingTemplate.convertAndSend("/topic/game/" + roomId, dto);
-		if (room.winner != null && room.playerScore != null) {
-			System.out.println("🎉 Winner is: " + room.winner.getUsername());
-			messagingTemplate.convertAndSend("/topic/scoreboard", room.playerScore);
-		}
-		if(player.isPenalty())
-			room.getGameEngine().nextPlayer();
+	public void drawCards(int roomId, GameMove move, boolean val) {
+	    GameRoom room = gameRooms.get(roomId);
+	    if (room == null) {
+	        System.out.println("Room not found: " + roomId);
+	        return;
+	    }
+
+	    Player player = room.getPlayers().stream()
+	                        .filter(p -> p.getId() == move.getPlayerId())
+	                        .findFirst()
+	                        .orElse(null);
+
+	    if (player == null) {
+	        System.out.println("Player not found: " + move.getPlayerId());
+	        return;
+	    }
+
+	    player.setPenalty(val);
+	    System.out.println("(Inside game state => Player : " + player.getUsername());
+
+	    room.drawCards(player);
+
+	    GameRoomDTO dto = convertToDTO(room);
+	    messagingTemplate.convertAndSend("/topic/game/" + roomId, dto);
+
+	    if (room.winner != null && room.playerScore != null) {
+	        System.out.println("🎉 Winner is: " + room.winner.getUsername());
+	        messagingTemplate.convertAndSend("/topic/scoreboard", room.playerScore);
+	    }
 	}
 
 	public List<GameRoom> getGameRooms() {
@@ -230,31 +255,7 @@ public class GameState {
 	}
 
 	public void endRoom(int roomId) {
-		GameRoom room = gameRooms.get(roomId);
-//	    List<PlayerScore> scores = new ArrayList<>();
-//	    
-//	    room.setEndedAt(LocalDateTime.now()); // ✅ capture end time
-//	    long time = Duration.between(room.getCreatedAt(), room.getEndedAt()).getSeconds();
-//	    room.setActiveRoomTime(time);
-//	    if (room != null) {
-//	        for (Player p : room.getPlayers()) {
-//	            int points = room.calculatePoints(p);
-//	            PlayerScore score = new PlayerScore(
-//	                p.getId(),
-//	                p.getUsername(),
-//	                p.getMobileNumber(),
-//	                points,
-//	                roomId,
-//	                time
-//	            );
-//	            pastScores.add(score);
-//	            scores.add(score); // return snapshot for broadcast
-//	            repository.save(score);	// adding score details into database 
-//	        }
-//	        System.out.println("Room " + roomId + " ended. Scores saved.");
-//	    }
-//	    System.out.println(scores);
-//	    messagingTemplate.convertAndSend("/topic/scoreboard", scores);
+//		GameRoom room = gameRooms.get(roomId);
 		gameRooms.remove(roomId); // mark as ended
 	}
 }
