@@ -1,14 +1,35 @@
 package com.timelessOrbit.gamestate;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "cards")
 public class Card {
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private long id;
+	@Enumerated(EnumType.STRING)
 	public Aara aara;
+	@Enumerated(EnumType.STRING)
     public Dwar dwar;
+	@Enumerated(EnumType.STRING)
     public CardType type;
     public String imageURL; // ✅ new field
     public int pointValue;
+    @Enumerated(EnumType.STRING)
     public Aara newAara;
     
-    public Card(Aara aara, Dwar dwar) {
+    public Card() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+	public Card(Aara aara, Dwar dwar) {
         this.aara = aara;
         this.dwar = dwar;
 

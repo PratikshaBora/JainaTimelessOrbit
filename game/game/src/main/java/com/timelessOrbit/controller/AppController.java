@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class AppController {
 
 	@RequestMapping({
-		 "/", "/login", "/home", "/lobby", "/room/**", "/winner"
+		 "/", "/login", "/home", "/lobby", "/room/*", "/winner"
 	})
 	public String index()
 	{

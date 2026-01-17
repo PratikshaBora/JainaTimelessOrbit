@@ -16,6 +16,8 @@ export class HomePage implements OnInit, OnDestroy {
   currentPosition: number | string = 'Not Started';
   currentUser!: MessagePayload;   // ✅ consistently use currentUser
   private subscription!: Subscription;
+  isJourneyDisabled: boolean = false;
+  private roomSubscription!: Subscription; // <--- Add this for rooms
 
   constructor(
     private router: Router,
@@ -53,6 +55,7 @@ export class HomePage implements OnInit, OnDestroy {
         this.currentPosition = index >= 0 ? index + 1 : 'Not in Top 5';
       }
     });
+
   }
 
   startGame() {

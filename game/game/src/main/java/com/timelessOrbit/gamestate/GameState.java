@@ -9,6 +9,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.timelessOrbit.repository.GameRoomRepository;
+import com.timelessOrbit.repository.PlayerRepository;
 import com.timelessOrbit.repository.PlayerScoreRepository;
 
 @Component // ✅ makes GameState managed by Spring
@@ -17,11 +19,14 @@ public class GameState {
 	@Autowired
 	SimpMessagingTemplate messagingTemplate;
 	@Autowired
-	PlayerScoreRepository repository;
+	PlayerScoreRepository playerScoreRepository;
+	@Autowired
+	GameRoomRepository gameRoomRepository;
+	@Autowired
+	PlayerRepository playerRepository; 
 
-	List<Player> waitingPlayers = new ArrayList<Player>();
-	List<GameRoom> gameRooms = new ArrayList<GameRoom>();
-	private int nextPlayerId = 0; // global counter
+	List<Player> waitingPlayers = Collections.synchronizedList(new ArrayList<>());
+	List<GameRoom> gameRooms = Collections.synchronizedList(new ArrayList<>());
 
 	private List<PlayerScore> pastScores = new ArrayList<>();
 
@@ -32,23 +37,28 @@ public class GameState {
 		return gameRooms.get(roomId).getCurrentPlayer();
 	}
 
+	// --- Lobby management ---
+
 	// When a player joins, they go into waitingPlayers.
 	public void addPlayer(Player p) {
 		System.out.println("player info received from frontend: " + p);
 
 		// ✅ Create backend Player with assigned ID
 		Player player = new Player();
-		player.setId(nextPlayerId++);
+//		player.setId(nextPlayerId++);
 		player.setUsername(p.getUsername());
 		player.setMobileNumber(p.getMobileNumber());
+		
+		
 		System.out.println("Populated player with id : " + player);
 
 		waitingPlayers.add(player);
+		playerRepository.save(player);
 		System.out.println("No of waiting players : " + waitingPlayers.size());
 
 		// ✅ Convert to DTO
-		PlayerDTO dto = new PlayerDTO(player.getId(), player.getUsername(), player.getPoints(),
-				new ArrayList<>(player.getHand()) // defensive copy
+		PlayerDTO dto = new PlayerDTO(player.getId(), player.getUsername(), player.getMobileNumber(),
+				player.getPoints(),	new ArrayList<>(player.getHand()) // defensive copy
 		);
 
 		// ✅ Broadcast to frontend
@@ -88,7 +98,7 @@ public class GameState {
 
 	public void createRoom(int count) {
 		GameRoom room = new GameRoom();
-		room.setRepo(repository);
+		gameRoomRepository.save(room);
 		int roomId = gameRooms.size(); // simple auto-increment
 		room.setId(roomId);
 
@@ -98,15 +108,14 @@ public class GameState {
 		for (int i = 0; i < count; i++) {
 			if (!waitingPlayers.isEmpty()) {
 				Player p = waitingPlayers.remove(0);
-				p.setRoomId(roomId); // assign room number
-//                p.setId(nextPlayerId++);      // assign unique player ID
+				playerRepository.save(p);
 				room.players.add(p);
 			}
 		}
 
 		// Prepare and distribute cards
-		room.prepare_card();
-		room.distribute();
+		room.prepareDeck();
+		room.distributeCards(5);
 		gameRooms.add(room);
 
 		System.out.println("✅ GameRoom " + roomId + " created with " + count + " players");
@@ -130,7 +139,8 @@ public class GameState {
 
 		// Convert each Player to PlayerDTO
 		List<PlayerDTO> playerDTOs = room.players.stream().map(p -> {
-			return new PlayerDTO(p.getId(), p.getUsername(), p.getPoints(), new ArrayList<>(p.getHand()));
+			return new PlayerDTO(p.getId(), p.getUsername(), p.getMobileNumber(),
+					p.getPoints(), new ArrayList<>(p.getHand()));
 		}).toList();
 
 		dto.setPlayers(playerDTOs);
@@ -151,7 +161,7 @@ public class GameState {
 
 	// Access past scores
 	public List<PlayerScore> getPastScores() {
-		pastScores = repository.findAll();
+		pastScores = playerScoreRepository.findAll();
 		return pastScores;
 	}
 
@@ -194,7 +204,8 @@ public class GameState {
 			return;
 		}
 
-		Player player = room.getPlayers().stream().filter(p -> p.getId() == move.getPlayerId()).findFirst()
+		Player player = room.getPlayers().stream().
+				filter(p -> p.getId() == move.getPlayerId()).findFirst()
 				.orElse(null);
 
 		if (player == null) {
@@ -206,7 +217,7 @@ public class GameState {
 		System.out.println("(Inside game state => Player : " + player.getUsername());
 
 		room.drawCards(player);
-
+		
 		GameRoomDTO dto = convertToDTO(room);
 		messagingTemplate.convertAndSend("/topic/game/" + roomId, dto);
 
@@ -252,16 +263,6 @@ public class GameState {
 		return new ArrayList<>(waitingPlayers);
 	}
 
-//	public void scheduleEndRoom(GameRoom room) {
-//		int roomId = room.getId();
-//		scheduler.schedule(() -> {
-//			System.out.println("⏳ Auto-ending room " + roomId);
-//			messagingTemplate.convertAndSend("/topic/game/" + roomId + "/end",
-//					"Room " + roomId + " has ended. Returning to home.");
-//			endRoom(roomId);
-//		}, 3, TimeUnit.MINUTES);
-//	}
-	
 	@Scheduled(fixedRate = 30000) // runs every 30 seconds
 	public void scheduledEndRoomCheck() {
 	    long now = System.currentTimeMillis();
@@ -285,8 +286,31 @@ public class GameState {
 	}
 
 	public void endRoom(int roomId) {
-		if (roomId >= 0 && roomId < gameRooms.size()) {
-			gameRooms.remove(roomId);
-		}
+        gameRooms.removeIf(r -> r.getId() == roomId);
+        gameRoomRepository.deleteById(roomId);
+    }
+
+	public void rejoin(RejoinRequest request) {
+	
+		// 1. Find player
+        Player player = playerRepository.findByUsernameAndMobileNumber(
+            request.getUsername(), request.getMobileNumber()
+        );
+        if (player == null) {
+            throw new RuntimeException("Player not found");
+        }
+
+        // 2. Find room
+        GameRoom room = gameRoomRepository.findById(request.getRoomId())
+            .orElseThrow(() -> new RuntimeException("Room not found"));
+
+        // 3. Rehydrate transient runtime fields
+        room.setGameEngine(room);
+    
+        // 4. Build DTO snapshot
+        GameRoomDTO dto = room.toDTO();
+
+        // 5. Broadcast updated state
+        messagingTemplate.convertAndSend("/topic/game/" + room.getId(), dto);
 	}
 }

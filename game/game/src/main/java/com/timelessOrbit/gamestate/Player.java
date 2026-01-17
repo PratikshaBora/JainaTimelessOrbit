@@ -3,13 +3,32 @@ package com.timelessOrbit.gamestate;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name="players")
 public class Player {
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int id;
 	private String username;
 	private String mobileNumber; // optional if you need it
 	private int points;
-	private int roomId;
-	public List<Card> hand;
+//	private int roomId;
+
+	// --- Relation: One player has many cards in hand ---
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinColumn(name = "player_id") // foreign key in cards table
+    public List<Card> hand = new ArrayList<>();
+
 	private int handCount;
 	private boolean saidJaiJinendra;
 	private boolean penalty;
@@ -23,16 +42,25 @@ public class Player {
 		this.saidJaiJinendra = false;
 	}
 
-	public Player(int id, String username, int points, List<Card> hand) {
-		this.id = id;
-		this.username = username;
-		this.points = points;
-		// Defensive copy: ensures Player has its own list
-		this.hand = (hand != null) ? new ArrayList<>(hand) : new ArrayList<>();
-		this.handCount = this.hand.size(); // ✅ reflect actual hand size
-		this.saidJaiJinendra = false; // ✅ initialize consistently
-		this.penalty = false;
-	}
+	public Player(String username, String mobileNumber) {
+        this.username = username;
+        this.mobileNumber = mobileNumber;
+        this.points = 0;
+        this.hand = new ArrayList<>();
+        this.saidJaiJinendra = false;
+        this.penalty = false;
+    }
+
+//	public Player(int id, String username, int points, List<Card> hand) {
+//		this.id = id;
+//		this.username = username;
+//		this.points = points;
+//		// Defensive copy: ensures Player has its own list
+//		this.hand = (hand != null) ? new ArrayList<>(hand) : new ArrayList<>();
+//		this.handCount = this.hand.size(); // ✅ reflect actual hand size
+//		this.saidJaiJinendra = false; // ✅ initialize consistently
+//		this.penalty = false;
+//	}
 
 	// --- Getters & Setters ---
 	public int getId() {
@@ -67,13 +95,13 @@ public class Player {
 		this.points = points;
 	}
 
-	public int getRoomId() {
-		return roomId;
-	}
-
-	public void setRoomId(int roomId) {
-		this.roomId = roomId;
-	}
+//	public int getRoomId() {
+//		return roomId;
+//	}
+//
+//	public void setRoomId(int roomId) {
+//		this.roomId = roomId;
+//	}
 
 	public List<Card> getHand() {
 		return hand;

@@ -41,6 +41,20 @@ export class LobbyPage implements OnInit {
       if (currentUser) {
         this.wsService.joinLobby(currentUser);   // ✅ send full object
       }
+      // ✅ Check if refresh/rejoin
+      const roomId = localStorage.getItem("roomId");
+      const username = localStorage.getItem("username");
+      const mobileNumber = localStorage.getItem("mobileNumber");
+
+      if (roomId && username && mobileNumber) {
+        console.log("Detected refresh/rejoin, sending rejoin request...");
+        this.wsService.rejoinRoom({
+          roomId: parseInt(roomId),
+          username,
+          mobileNumber
+        });
+      }
+
     });
 
     this.wsService.playerJoined$.subscribe((player) => {
@@ -59,17 +73,17 @@ export class LobbyPage implements OnInit {
     });
 
     this.wsService.rooms$.subscribe((rooms: GameRoomDTO[]) => {
-      if (state?.fromWinner) {
-        console.log('Returned from winner page — skipping auto-join');
-        return;
-      }
-
       const newRoom = rooms[rooms.length - 1];
 
       // ✅ Only navigate if current user is in that room
       if (newRoom.players.some(p => p.username === this.currentUserName))
       {
         console.log('Auto‑joining room', newRoom.roomId);
+        // Save identity for refresh/rejoin
+        localStorage.setItem("roomId", newRoom.roomId.toString());
+        localStorage.setItem("username", this.currentUserName);
+        localStorage.setItem("mobileNumber", currentUser.mobile_number || "");
+
         this.router.navigate(['/room', newRoom.roomId], {
           state: { room: newRoom },
         });

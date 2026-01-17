@@ -10,24 +10,67 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.timelessOrbit.repository.PlayerScoreRepository;
 
-public class GameRoom {
-	private int id;
-	public List<Player> players;
-	public List<Card> drawPile;
-	public List<Card> discardPile;
-	public List<PlayerScore> playerScore;
-	private Aara currentAara;
-	public int currentPlayerIndex;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
-	public Player winner;
+@Entity
+@Table(name = "game_rooms")
+public class GameRoom {
+	@Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+	private int id;
+
+	// --- Relations ---
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinColumn(name = "room_id")
+	public List<Player> players;
+    
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinColumn(name = "room_id")
+	public List<Card> drawPile;
+
+    // --- Runtime only ---
+    @Transient
+    public List<Card> discardPile;
+	
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinColumn(name = "room_id")
+	public List<PlayerScore> playerScore;
+	
+    @Enumerated(EnumType.STRING)
+	private Aara currentAara;
+
+    @Transient
+	public int currentPlayerIndex=0;
+
+    @Transient
+    public Player winner;
 
 	private LocalDateTime createdAt; // ✅ when room is created
 	private LocalDateTime endedAt; // ✅ when room ends
 	private long activeRoomTime;
+	@Transient
+	private GameRoomDTO gameDTO = null;
 	public boolean clockwise;
 	public boolean saidJaiJinendra;
+	
+	@Transient
 	private GameEngine engine;
-	private GameRoomDTO gameDTO = null;
+		
+	@ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "top_discard_card_id")
+    private Card topDiscardCard;
 
 	@Autowired
 	PlayerScoreRepository repo;
@@ -134,6 +177,7 @@ public class GameRoom {
 		} else {
 			nextIndex = (index - 1 + players.size()) % players.size();
 		}
+		currentPlayerIndex = nextIndex;
 		return players.get(nextIndex);
 	}
 
@@ -153,40 +197,33 @@ public class GameRoom {
 		}
 	}
 
-	public void prepare_card() {
-		for (Aara a : Aara.values()) {
-			for (Dwar d : Dwar.values()) {
-				if (d == Dwar.COLOR_CHANGE && (a == Aara.SECOND || a == Aara.FOURTH || a == Aara.SIXTH))
-					continue;
-				if (d == Dwar.COLOR_CHANGE_ADD4 && (a == Aara.FIRST || a == Aara.THIRD || a == Aara.FIFTH))
-					continue;
+	// --- Game logic methods ---
+    public void prepareDeck() {
+        drawPile.clear();
+        for (Aara a : Aara.values()) {
+            for (Dwar d : Dwar.values()) {
+                drawPile.add(new Card(a, d));
+            }
+        }
+        Collections.shuffle(drawPile);
+    }
 
-				drawPile.add(new Card(a, d));
-			}
-		}
-		int x = 1;
-		for (Card card : drawPile) {
-			System.out.println(x++ + " : " + card);
-		}
-	}
-
-	public void distribute() {
-		Collections.shuffle(drawPile);
-
-		// Deal 5 cards one by one in rotation
-		for (int round = 0; round < 5; round++) {
-			for (Player p : players) {
-				p.getHand().add(drawPile.remove(0));
-			}
-		}
-		discardPile.add(drawPile.remove(0));
-		setCurrentAara(discardPile.get(discardPile.size() - 1).aara);
-		players.forEach(p -> {
-			System.out.println("Cards in " + p.getUsername() + " hand : ");
-			p.getHand().forEach(card -> System.out.println(card));
-		});
-	}
-
+    public void distributeCards(int handSize) {
+        for (int round = 0; round < handSize; round++) {
+            for (Player p : players) {
+                if (!drawPile.isEmpty()) {
+                    p.addCard(drawPile.remove(0));
+                }
+            }
+        }
+        // First discard
+        if (!drawPile.isEmpty()) {
+            topDiscardCard = drawPile.remove(0);
+            discardPile.add(topDiscardCard);
+            currentAara = topDiscardCard.getAara();
+        }
+    }
+    
 	public void playCard(Player player, Card card) {
 		System.out.println("inside game room: " + card);
 		System.out.println("current player : " + player.getUsername());
@@ -320,8 +357,11 @@ public class GameRoom {
 			playerScore.clear(); // avoid duplicates
 
 			for (Player p : getPlayers()) {
-				PlayerScore score = new PlayerScore(p.getId(), p.getUsername(), p.getMobileNumber(), p.getPoints(),
-						p.getRoomId(), activeRoomTime);
+				PlayerScore score = new PlayerScore(
+					    p.getId(), p.getUsername(), p.getMobileNumber(),
+					    p.getPoints(), activeRoomTime, this
+					);
+					repo.save(score);
 
 				// Assign bonus field correctly
 				if (p == winner) {

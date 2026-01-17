@@ -1,60 +1,38 @@
 <ion-content class="page-background">
   <div class="confetti-container">
-    <div class="petal" *ngFor="let i of [1,2,3,4,5,6]"></div>
+    <div class="petal" *ngFor="let i of [1,2,3,4,5,6,7,8]"></div>
   </div>
 
   <div class="winner-section fade-in-up" *ngIf="winner">
-    <div class="trophy-wrapper">
-      <div class="crown-icon">👑</div>
-      <img src="assets/winner-medal.png" class="winner-avatar" onerror="this.src='assets/default-avatar.png'">
-    </div>
+    <span class="crown-icon">👑</span>
+    <h1 class="winner-name">{{ winner.username }}</h1>
+    <div class="divine-badge">✨ Divine Bonus: {{ winner.bonus }} ✨</div>
+  </div>
 
-    <div class="winner-announcement">
-      <h1>{{ winner.username }}</h1>
-      <div class="winner-stats">
-        <span class="badge rank">Rank: {{ winner.rank }}</span>
-        <span class="badge points">Points: {{ winner.points }}</span>
+  <div class="board-container fade-in-delayed">
+    <div class="glass-table">
+      <div class="table-header">
+        <span>Player</span>
+        <span>Pts</span>
+        <span>Bonus</span>
       </div>
-      <p class="bonus-text">✨ Divine Bonus: {{ winner.bonus }} ✨</p>
+
+      <div class="scroll-area">
+        <div *ngFor="let s of scores; let i = index"
+             class="item-row" [class.winner-row]="i === 0">
+          <div class="name-col">
+            <span class="rank-tag">{{i + 1}}</span>
+            {{ s.username }}
+          </div>
+          <div class="val-col">{{ s.points }}</div>
+          <div class="val-col bonus">+{{ s.bonus }}</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <ion-card class="glass scoreboard-card fade-in-delayed">
-    <ion-card-header>
-      <ion-card-title class="ion-text-center">Final Standings</ion-card-title>
-    </ion-card-header>
-
-    <ion-card-content>
-      <div class="table-container">
-        <ion-grid>
-          <ion-row class="header-row">
-            <ion-col size="5">Player</ion-col>
-            <ion-col size="2">Pts</ion-col>
-            <ion-col size="2">Rank</ion-col>
-            <ion-col size="3">Bonus</ion-col>
-          </ion-row>
-
-          <ion-row *ngFor="let s of scores; let i = index"
-                   class="score-row"
-                   [class.first-place]="i === 0">
-            <ion-col size="5" class="player-name">
-              <span class="rank-number">{{i + 1}}</span> {{ s.username }}
-            </ion-col>
-            <ion-col size="2">{{ s.points }}</ion-col>
-            <ion-col size="2">{{ s.rank }}</ion-col>
-            <ion-col size="3" class="bonus-val">+{{ s.bonus }}</ion-col>
-          </ion-row>
-        </ion-grid>
-      </div>
-    </ion-card-content>
-  </ion-card>
-
   <div class="action-footer">
-    <ion-button fill="outline" color="light" (click)="leaveRoom()" class="btn-leave">
-      Leave Room
-    </ion-button>
-    <ion-button color="danger" (click)="endRoom()" class="btn-end">
-      End Game
-    </ion-button>
+    <button class="btn-flat" (click)="leaveRoom()">Leave</button>
+    <button class="btn-danger" (click)="endRoom()">End Game</button>
   </div>
 </ion-content>

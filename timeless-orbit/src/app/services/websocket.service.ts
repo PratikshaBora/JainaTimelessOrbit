@@ -59,6 +59,7 @@ export class WebsocketService {
         const mappedPlayers: MessagePayload[] = backendPlayers.map(p => ({
           id: Number(p.id),
           username: p.username,
+          mobile_number: p.mobile_number,
           points: p.points,
           roomId: p.roomId,
         }));
@@ -153,6 +154,9 @@ export class WebsocketService {
     } else {
       console.warn('STOMP not connected yet, cannot publish join');
     }
+  }
+  rejoinRoom(request: { roomId: number; username: string; mobileNumber: string }) {
+    this.stompClient.publish({ destination: '/app/rejoin'});
   }
   requestLobbyStatus() {
     this.stompClient?.publish({ destination: '/app/lobby/status' });

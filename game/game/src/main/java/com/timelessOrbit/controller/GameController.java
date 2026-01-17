@@ -21,6 +21,7 @@ import com.timelessOrbit.gamestate.GameRoomDTO;
 import com.timelessOrbit.gamestate.GameState;
 import com.timelessOrbit.gamestate.Player;
 import com.timelessOrbit.gamestate.PlayerDTO;
+import com.timelessOrbit.gamestate.RejoinRequest;
 
 @Controller
 @CrossOrigin(origins = "http://localhost:8100",allowCredentials = "true")
@@ -118,5 +119,9 @@ public class GameController {
             messagingTemplate.convertAndSend("/topic/game/" + roomId + "/end",
                 "Room " + roomId + " has ended. Returning to home.");
         }
+    }
+    @MessageMapping("/rejoin")
+    public void rejoin(RejoinRequest request) {
+        gameState.rejoin(request);
     }
 }
